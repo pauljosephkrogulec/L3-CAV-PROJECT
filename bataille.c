@@ -279,6 +279,12 @@ int deadShip(Ship s){
     }
     return 0;
     
+
+void startGame(Player p1) {
+    /** Fonction qui prend en paramètre un joueur p1, et lance le jeu. */
+
+    // on rempli la grille de jeu du joueur.
+    fillGrid(p1);
 }
 int deadShips(Player p){
     int i = 0; int destroyed=0;
