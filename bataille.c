@@ -310,5 +310,4 @@ void main() {
 
     // On affiche la grille des deux joueurs.
     printGrid(p1, p2);
-    printf("%d",deadShips(p1));
 }
