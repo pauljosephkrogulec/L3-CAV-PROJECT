@@ -67,25 +67,18 @@ Player initPlayer(char *name, int nbShip) {
 
 void printGrid(Case **grid) {
 
-    for(int i = 0; i < SIZE_GRID; i++) {
-        printf("\t%c", 'a' + i);
-    } printf("\n");
+    for(int i = 0; i < SIZE_GRID; i++) printf("\t%c", 'a' + i);
+    printf("\n");
 
     for(int i = 0; i < SIZE_GRID; i++) {
-        printf("%d\t", i+1);
+        printf("%d\t", i);
         for(int j = 0; j < SIZE_GRID;j++) {
             if(grid[i][j]->state == TOUCHED) {
-                if(grid[i][j]->type == SHIP) {
-                    printf("#");
-                } else {
-                    printf("X");
-                }
+                if(grid[i][j]->type == SHIP) printf("#");
+                else printf("X");
             } else {
-                if(grid[i][j]->type == SHIP) {
-                    printf("O");
-                } else {
-                    printf(".");
-                }
+                if(grid[i][j]->type == SHIP) printf("O");
+                else printf(".");
             }
             printf("\t");
         } printf("\n");
@@ -100,18 +93,19 @@ int playerShoot(Case **grid, int x, int y) {
 
     if(c->state == NOT_TOUCHED) {
         c->state = TOUCHED;
-        if(c->type == SHIP) {
-            return 2;
-        } else {
-            return 0;
-        }
-    } else {
-        return 1;
-    }
+        if(c->type == SHIP) return 2;
+        else return 0;
+    } else return 1;
 }
 
 void main() {
+    char * rep = malloc(sizeof(char)*2);
     Player p = initPlayer("Edward", 10);
-    playerShoot(p->grid, 2, 3);
+    do
+    {
+        scanf("%s",rep);
+    } while (rep[0]<'0' && rep[0]>'9' && rep[1]<'a' && rep[1]>'j');
+    
+    playerShoot(p->grid, rep[0]-'0', rep[1]-'a');
     printGrid(p->grid);
 }
