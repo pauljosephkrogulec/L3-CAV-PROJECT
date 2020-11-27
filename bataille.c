@@ -182,17 +182,17 @@ void fillGrid(Player p){
     {
         while (tab[i] != 0)
         {   
-            int x = rand()%10;
-            int y = rand()%10;
+            int val_x = rand()%10;
+            int val_y = rand()%10;
             s = malloc(sizeof(Ship));
             s->tabCase = NULL;s->length = i+2;
             s->oriented = i % 2 ? VERTICAL : HORIZONTAL;
-            if (s->oriented == VERTICAL && x+s->length<10){
-                addShip(p->grid, s, x, y);
+            if (s->oriented == VERTICAL && val_x+s->length<10){
+                addShip(p->grid, s, val_x, val_y);
                 tab[i]--;
             }
-            if (s->oriented == HORIZONTAL && y+s->length<10){
-                addShip(p->grid, s, x, y);
+            if (s->oriented == HORIZONTAL && val_y+s->length<10){
+                addShip(p->grid, s, val_x, val_y);
                 tab[i]--;
             }
             free(s);
