@@ -94,6 +94,7 @@ Player initPlayer(char *name, int nbShip) {
     p->nbShip = p->nbShip_alive = nbShip;
     p->grid = initGrid();
     p->tab_ship = NULL;
+
     return p;
 }
 
@@ -101,34 +102,76 @@ int addShip(Case **grid, Ship s, int x, int y) {
     /** Prend en paramètre une grille de jeu, un bateau et les positions (x, y) où le placer.
     La fonction va ajouter le bateau à la grille, si le bateau à bien été ajouté, on retourne 1, sinon 0. */    
 
-    Case c;
-    int val_x, val_y;
+    int val_x, val_y, n = 0, libre, stop = 0, nbCase = 0;
+    Case *tab_tmp = malloc(sizeof(Case) * s->length), c;
 
+    // on déclare le tableau de cases du bateau.
     s->tabCase = malloc(sizeof(Case) * s->length);
 
-    for(int i = 0; i < s->length;i++) {
-        if(s->oriented == VERTICAL) {  
-            c = grid[x+i][y];
-        } else {
-            c = grid[x][y+i];
-        }
-
-        if(c->type == WATER) {
-            c->type = SHIP;
-            c->state = NOT_TOUCHED;
-        }
-
-        s->tabCase[i] = c;
+    // si les coordonnées indiqués ne sont pas dans la grille, on ne fait rien.
+    if(x < 0 || x > SIZE_GRID || y < 0 || y > SIZE_GRID) {
+        return 0;
     }
 
-    return 0;
+    // Pour chaque case du futur bateau..
+    while(n < s->length && !stop) {
+
+        // En fonction de l'orientation du bateau, on regarde quel case prendre.
+        if(s->oriented == VERTICAL) {
+            val_x = x+n, val_y = y;
+        } else {
+            val_x = x, val_y = y+n;
+        }
+
+        // On vérifie si la case à regardé est dans le tableau.
+        if((val_x >= 0 && val_x < SIZE_GRID) && (val_y >= 0 && val_y < SIZE_GRID)) {
+            // Si c'est le cas, on va regarder si les cases autour de la case à ajouté sont vides.
+            for(int j = val_x-1;j < val_x + 2;j++) {
+                if(j >= 0 && j < SIZE_GRID) {
+                    for(int k = val_y-1;k < val_y + 2;k++) {
+                        // Si la case n'est pas vide, on ne peut pas ajouter le tableau et on s'arrête.
+                        if(k >= 0 && k < SIZE_GRID && !grid[j][k]->type == WATER) {
+                            stop = 1;
+                        }
+                    }
+                }
+            }
+            // Si la case et les autres autour sont libres, on l'ajoute au tableau.
+            tab_tmp[nbCase++] = grid[val_x][val_y];
+        // Si la case à regardé n'est pas dans le tableau, on s'arrête.
+        } else {
+            stop = 1;
+        }
+        // on incrémente n pour passé à la case suivante.
+        n++;
+    }
+    // Si à fait tout la longueur du bateau, alors le bateau est bien ajouté.
+    if(n == s->length && !stop) {
+        for(int i = 0; i < nbCase;i++) {
+
+            c = grid[tab_tmp[i]->x][tab_tmp[i]->y];
+            c->type = SHIP;
+            c->state = NOT_TOUCHED;
+            s->tabCase[i] = c;
+        }
+    // Sinon, cela veut dire qu'on à rencontré une erreur, et on n'ajoute pas le bateau.
+    } else {
+    // on retourne 0 pour dire que le bateau n'à pas été ajouté.
+        return 0;
+    }
+
+    // on libére l'espace mémoire stocké par le tableau de case temporaire.
+    free(tab_tmp);
+
+    // on retourne 1 pour dire que le bateau à bien été ajouté.
+    return 1;
 
 }
 
-void printGrid(Case **grid) {
+void printGrid(Player p1) {
 
-
-    printf("     |");
+    printf("\t\tPlateau de %s\n", p1->name);
+    printf("\n     |");
     for(int i = 0; i < SIZE_GRID; i++) {
         printf(" %c |", 'a' + i);
     } printf("\n----------------------------------------------\n");
@@ -138,14 +181,14 @@ void printGrid(Case **grid) {
         if(i == 9) printf("| %d | ", i+1);
         else printf("| %d  | ", i+1);
         for(int j = 0; j < SIZE_GRID;j++) {
-            if(grid[i][j]->state == TOUCHED) {
-                if(grid[i][j]->type == SHIP) {
+            if(p1->grid[i][j]->state == TOUCHED) {
+                if(p1->grid[i][j]->type == SHIP) {
                     printf("#");
                 } else {
                     printf("X");
                 }
             } else {
-                if(grid[i][j]->type == SHIP) {
+                if(p1->grid[i][j]->type == SHIP) {
                     printf("O");
                 } else {
                     printf(" ");
@@ -179,8 +222,8 @@ void main() {
     Player p = initPlayer("Edward", 10);
 
     Ship s = malloc(sizeof(Ship));
-    s->tabCase = NULL;s->length = 2;s->oriented = VERTICAL;
-    addShip(p->grid, s, 5, 5);
-    printGrid(p->grid);
+    s->tabCase = NULL;s->length = 3;s->oriented = HORIZONTAL;
+    addShip(p->grid, s, 0,1);
+    printGrid(p);
 
 }
