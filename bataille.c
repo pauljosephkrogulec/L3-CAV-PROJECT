@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <time.h>
 // On déclare quelques constantes...
 #define SIZE_GRID 10
 
@@ -94,7 +94,6 @@ Player initPlayer(char *name, int nbShip) {
     p->nbShip = p->nbShip_alive = nbShip;
     p->grid = initGrid();
     p->tab_ship = NULL;
-
     return p;
 }
 
@@ -168,10 +167,10 @@ int addShip(Case **grid, Ship s, int x, int y) {
 
 }
 
-void printGrid(Player p1) {
+void printGrid(Case **grid) {
 
-    printf("\t\tPlateau de %s\n", p1->name);
-    printf("\n     |");
+    printf("----------------------------------------------\n");
+    printf("|    |");
     for(int i = 0; i < SIZE_GRID; i++) {
         printf(" %c |", 'a' + i);
     } printf("\n----------------------------------------------\n");
@@ -181,14 +180,14 @@ void printGrid(Player p1) {
         if(i == 9) printf("| %d | ", i+1);
         else printf("| %d  | ", i+1);
         for(int j = 0; j < SIZE_GRID;j++) {
-            if(p1->grid[i][j]->state == TOUCHED) {
-                if(p1->grid[i][j]->type == SHIP) {
+            if(grid[i][j]->state == TOUCHED) {
+                if(grid[i][j]->type == SHIP) {
                     printf("#");
                 } else {
                     printf("X");
                 }
             } else {
-                if(p1->grid[i][j]->type == SHIP) {
+                if(grid[i][j]->type == SHIP) {
                     printf("O");
                 } else {
                     printf(" ");
@@ -200,8 +199,39 @@ void printGrid(Player p1) {
     }
 }
 
-int playerShoot(Case **grid, int x, int y) {
-    /** 0 = eau | 1 = deja touche | 2 = touche */
+void fillGrid(Player p) {
+    /** Fonction qui prend en paramètre un joueur p,
+    et va remplir aléatoirement sa grille de jeu de nbShip bateaux. */
+    
+    Ship s;
+    int tab_ship[4] = {1, 2, 1, 1}, cpt = 0, val_x, val_y;
+    for (int i = 0; i < 4; i++) {
+        while (tab_ship[i] != 0) {   
+            val_x = rand() % 10;
+            val_y = rand() % 10;
+            s = malloc(sizeof(Ship));
+            s->tabCase = NULL;s->length = i+2;
+            s->oriented = cpt % 2 ? VERTICAL : HORIZONTAL;
+            if(s->oriented == VERTICAL && val_x+s->length < 10){
+                if (addShip(p->grid, s, val_x, val_y)){
+                    tab_ship[i]--;
+                }
+            }
+            if(s->oriented == HORIZONTAL && val_y+s->length < 10){
+                if (addShip(p->grid, s, val_x, val_y)){
+                    tab_ship[i]--;
+                }
+            }
+            cpt++;
+            free(s);
+        }    
+    }
+}
+
+int shoot(Case **grid, int x, int y) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction va tirer dans la case indiqué et changé l'état du bateau.
+    On retourne 0 si on tire dans l'eau, 1 si la case à déjà été touché, 2 si on touche un bateau. */
 
     Case c = grid[x][y];
 
@@ -219,11 +249,26 @@ int playerShoot(Case **grid, int x, int y) {
 
 /** Fonction main */
 void main() {
+    srand(time(NULL));
     Player p = initPlayer("Edward", 10);
 
+    fillGrid(p);
+    printGrid(p->grid);
+
+    int x, y;
+
     Ship s = malloc(sizeof(Ship));
-    s->tabCase = NULL;s->length = 3;s->oriented = HORIZONTAL;
-    addShip(p->grid, s, 0,1);
-    printGrid(p);
+    s->length = 1;s->oriented = HORIZONTAL; s->tabCase = NULL;
+
+    printf("Entrez une coordonne : \n");
+    scanf("%d", &x);
+    scanf("%d", &y);
+
+    addShip(p->grid, s, x, y);
+    
+    printGrid(p->grid);
+
+    printf("%d", s->tabCase[0]->state);
+
 
 }
