@@ -87,13 +87,13 @@ Case **initGrid() {
     return grid;
 }
 
-Player initPlayer(char *name, int nbShip) {
+Player initPlayer(char *name) {
     /** Prend en paramètre le nom d'un joueur et son nombre de bateau.
     La fonction va initialiser un joueur et lui crée son plateau de jeu et son tableau de bateau à null. */
 
     Player p = malloc(sizeof(Player));
     p->name = name;
-    p->nbShip = p->nbShip_alive = nbShip;
+    p->nbShip = p->nbShip_alive = 0;
     p->grid = initGrid();
     p->tab_ship = NULL;
     return p;
@@ -111,10 +111,10 @@ Ship initShip(int l, enum orientedShip o) {
     return s;
 }
 
-int addShip(Case **grid, Ship s, int x, int y) {
+int addShip(Player p, Ship s, int x, int y,int index) {
     /** Prend en paramètre une grille de jeu, un bateau et les positions (x, y) où le placer.
     La fonction va ajouter le bateau à la grille, si le bateau à bien été ajouté, on retourne 1, sinon 0. */    
-
+    Case ** grid = p->grid;
     int val_x, val_y, n = 0, libre, stop = 0, nbCase = 0;
     Case *tab_tmp = malloc(sizeof(Case) * s->length), c;
 
@@ -175,7 +175,7 @@ int addShip(Case **grid, Ship s, int x, int y) {
 
     // on libére l'espace mémoire stocké par le tableau de case temporaire.
     free(tab_tmp);
-
+    p->tab_ship[index]=s;
     // on retourne 1 pour dire que le bateau à bien été ajouté.
     return 1;
 
@@ -220,26 +220,29 @@ void fillGrid(Player p) {
     et va remplir aléatoirement sa grille de jeu de nbShip bateaux. */
     
     Ship s;
-    int tab_ship[4] = {1, 2, 1, 1}, cpt = 0, val_x, val_y;
+    int tab_ship[4] = {1, 2, 1, 1}, cpt = 0, val_x, val_y, index = 0;
+    p->tab_ship = malloc(sizeof(Ship)*5);
     srand(time(NULL));
-    
     for (int i = 0; i < 4; i++) {
         while (tab_ship[i] != 0) {   
             val_x = rand() % 10;
             val_y = rand() % 10;
             s = initShip(i+2, (cpt % 2 ? VERTICAL : HORIZONTAL));
             if(s->oriented == VERTICAL && (val_x + s->length < 10)){
-                if (addShip(p->grid, s, val_x, val_y)){
+                if (addShip(p, s, val_x, val_y,index)){
+                    index++;
+                    p->nbShip++;
                     tab_ship[i]--;
                 }
             }
             if(s->oriented == HORIZONTAL && (val_y + s->length < 10)){
-                if (addShip(p->grid, s, val_x, val_y)){
+                if (addShip(p, s, val_x, val_y,index)){
+                    index++;
+                    p->nbShip++;
                     tab_ship[i]--;
                 }
             }
             cpt++;
-            free(s);
         }    
     }
 }
@@ -282,6 +285,8 @@ int deadShips(Player p){
     while (i<p->nbShip) 
     {
         if (deadShip(p->tab_ship[i])==0) return 0;
+
+        i++;
     }
     return 1;
 }
@@ -297,12 +302,13 @@ void startGame(Player p1) {
 void main() {
 
     // On initialise les deux joueurs de la partie.
-    Player p1 = initPlayer("Edward", 5);
-    Player p2 = initPlayer("IA", 5);
+    Player p1 = initPlayer("Edward");
+    Player p2 = initPlayer("IA");
 
     // On lance le jeu.
     startGame(p1);
 
     // On affiche la grille des deux joueurs.
     printGrid(p1, p2);
+    printf("%d",deadShips(p1));
 }
