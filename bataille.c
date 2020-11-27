@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <time.h>
 // On déclare quelques constantes...
 #define SIZE_GRID 10
 
@@ -127,8 +127,8 @@ int addShip(Case **grid, Ship s, int x, int y) {
 
 void printGrid(Case **grid) {
 
-
-    printf("     |");
+    printf("----------------------------------------------\n");
+    printf("|    |");
     for(int i = 0; i < SIZE_GRID; i++) {
         printf(" %c |", 'a' + i);
     } printf("\n----------------------------------------------\n");
@@ -174,13 +174,40 @@ int playerShoot(Case **grid, int x, int y) {
     }
 }
 
+
+void fillGrid(Player p){
+    int tab[4] = {4,3,2,1};
+    Ship s;
+    for (int i = 0; i < 4; i++)
+    {
+        while (tab[i] != 0)
+        {   
+            int x = rand()%10;
+            int y = rand()%10;
+            s = malloc(sizeof(Ship));
+            s->tabCase = NULL;s->length = i+2;
+            s->oriented = i % 2 ? VERTICAL : HORIZONTAL;
+            if (s->oriented == VERTICAL && x+s->length<10){
+                addShip(p->grid, s, x, y);
+                tab[i]--;
+            }
+            if (s->oriented == HORIZONTAL && y+s->length<10){
+                addShip(p->grid, s, x, y);
+                tab[i]--;
+            }
+            free(s);
+        }
+        
+    }
+    
+}
+
 /** Fonction main */
 void main() {
+    srand(time(NULL));
     Player p = initPlayer("Edward", 10);
 
-    Ship s = malloc(sizeof(Ship));
-    s->tabCase = NULL;s->length = 2;s->oriented = VERTICAL;
-    addShip(p->grid, s, 5, 5);
+    fillGrid(p);
     printGrid(p->grid);
 
 }
