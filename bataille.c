@@ -199,8 +199,39 @@ void printGrid(Case **grid) {
     }
 }
 
-int playerShoot(Case **grid, int x, int y) {
-    /** 0 = eau | 1 = deja touche | 2 = touche */
+void fillGrid(Player p) {
+    /** Fonction qui prend en paramètre un joueur p,
+    et va remplir aléatoirement sa grille de jeu de nbShip bateaux. */
+    
+    Ship s;
+    int tab_ship[4] = {1, 2, 1, 1}, cpt = 0, val_x, val_y;
+    for (int i = 0; i < 4; i++) {
+        while (tab_ship[i] != 0) {   
+            val_x = rand() % 10;
+            val_y = rand() % 10;
+            s = malloc(sizeof(Ship));
+            s->tabCase = NULL;s->length = i+2;
+            s->oriented = cpt % 2 ? VERTICAL : HORIZONTAL;
+            if(s->oriented == VERTICAL && val_x+s->length < 10){
+                if (addShip(p->grid, s, val_x, val_y)){
+                    tab_ship[i]--;
+                }
+            }
+            if(s->oriented == HORIZONTAL && val_y+s->length < 10){
+                if (addShip(p->grid, s, val_x, val_y)){
+                    tab_ship[i]--;
+                }
+            }
+            cpt++;
+            free(s);
+        }    
+    }
+}
+
+int shoot(Case **grid, int x, int y) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction va tirer dans la case indiqué et changé l'état du bateau.
+    On retourne 0 si on tire dans l'eau, 1 si la case à déjà été touché, 2 si on touche un bateau. */
 
     Case c = grid[x][y];
 
@@ -216,38 +247,6 @@ int playerShoot(Case **grid, int x, int y) {
     }
 }
 
-
-void fillGrid(Player p){
-    int tab[4] = {1,2,1,1};
-    Ship s;
-    int cpt =0;
-    for (int i = 0; i < 4; i++)
-    {
-        while (tab[i] != 0)
-        {   
-            int val_x = rand()%10;
-            int val_y = rand()%10;
-            s = malloc(sizeof(Ship));
-            s->tabCase = NULL;s->length = i+2;
-            s->oriented = cpt % 2 ? VERTICAL : HORIZONTAL;
-            if (s->oriented == VERTICAL && val_x+s->length<10){
-                if (addShip(p->grid, s, val_x, val_y)){
-                    tab[i]--;
-                }
-            }
-            if (s->oriented == HORIZONTAL && val_y+s->length<10){
-                if (addShip(p->grid, s, val_x, val_y)){
-                    tab[i]--;
-                }
-            }
-            cpt++;
-            free(s);
-        }
-        
-    }
-    
-}
-
 /** Fonction main */
 void main() {
     srand(time(NULL));
@@ -255,5 +254,21 @@ void main() {
 
     fillGrid(p);
     printGrid(p->grid);
+
+    int x, y;
+
+    Ship s = malloc(sizeof(Ship));
+    s->length = 1;s->oriented = HORIZONTAL; s->tabCase = NULL;
+
+    printf("Entrez une coordonne : \n");
+    scanf("%d", &x);
+    scanf("%d", &y);
+
+    addShip(p->grid, s, x, y);
+    
+    printGrid(p->grid);
+
+    printf("%d", s->tabCase[0]->state);
+
 
 }
