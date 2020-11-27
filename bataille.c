@@ -279,6 +279,7 @@ int deadShip(Ship s){
     }
     return 0;
     
+}
 
 int deadShips(Player p){
     int i = 0; int destroyed=0;
