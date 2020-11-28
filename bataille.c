@@ -53,6 +53,7 @@ typedef struct _Ship {
     Case *tabCase;
     int length;
     enum orientedShip oriented;
+    enum stateShip state;
 } *Ship;
 
 typedef struct _Player {
@@ -86,15 +87,28 @@ Case **initGrid() {
     return grid;
 }
 
-Player initPlayer(char *name, int nbShip) {
+Player initPlayer(char *name) {
     /** Prend en paramètre le nom d'un joueur et son nombre de bateau.
-    La fonction va initialise un joueur et lui crée son plateau de jeu et son tableau de bateau à null. */
+    La fonction va initialiser un joueur et lui crée son plateau de jeu et son tableau de bateau à null. */
+
     Player p = malloc(sizeof(Player));
     p->name = name;
-    p->nbShip = p->nbShip_alive = nbShip;
+    p->nbShip = p->nbShip_alive = 0;
     p->grid = initGrid();
     p->tab_ship = NULL;
     return p;
+}
+
+Ship initShip(int l, enum orientedShip o) {
+    /** Prend en paramètre la longueur et l'orientation d'un bateau.
+    La fonction va initialiser un bateau ses valeurs par défaud et les valeurs en paramètre.. */
+
+    Ship s = malloc(sizeof(Ship));
+    s->tabCase = NULL;
+    s->length = l;
+    s->oriented = o;
+    s->state = ALIVE;
+    return s;
 }
 
 int addShip(Case **grid, Ship s, int x, int y) {
@@ -161,42 +175,65 @@ int addShip(Case **grid, Ship s, int x, int y) {
 
     // on libére l'espace mémoire stocké par le tableau de case temporaire.
     free(tab_tmp);
-
     // on retourne 1 pour dire que le bateau à bien été ajouté.
     return 1;
 
 }
 
-void printGrid(Case **grid) {
+void printGrid(Player p1, Player p2) {
+    /** Fonction qui prend en paramètre deux joueurs (p1, p2),
+    et va afficher les grilles des deux joueurs l'une à côté de l'autre. */
 
+    Case c;
+
+    printf("\t\tGrille de %s \t\t\t\t\tGrille de l'%s\n", p1->name, p2->name);
+    printf("----------------------------------------------\t\t");
     printf("----------------------------------------------\n");
     printf("|    |");
-    for(int i = 0; i < SIZE_GRID; i++) {
-        printf(" %c |", 'a' + i);
-    } printf("\n----------------------------------------------\n");
+    for(int i = 0; i < SIZE_GRID * 2; i++) {
+        if(i == SIZE_GRID) printf("\t\t|    |");
+        printf(" %c |", 'A' + (i % SIZE_GRID));
+    }
+    printf("\n----------------------------------------------\t\t");
+    printf("----------------------------------------------\n");
 
     for(int i = 0; i < SIZE_GRID; i++) {
         
         if(i == 9) printf("| %d | ", i+1);
         else printf("| %d  | ", i+1);
-        for(int j = 0; j < SIZE_GRID;j++) {
-            if(grid[i][j]->state == TOUCHED) {
-                if(grid[i][j]->type == SHIP) {
+        for(int j = 0; j < SIZE_GRID * 2;j++) {
+
+            if(j < SIZE_GRID) {
+                c = p1->grid[i][j];
+            } else {
+                c = p2->grid[i][j%SIZE_GRID];
+            }
+
+            if(c->state == TOUCHED) {
+                if(c->type == SHIP) {
                     printf("#");
                 } else {
                     printf("X");
                 }
             } else {
-                if(grid[i][j]->type == SHIP) {
+                if(c->type == SHIP) {
                     printf("O");
                 } else {
                     printf(" ");
                 }
             }
+            if(j == SIZE_GRID -1) {
+                printf(" |\t\t");
+                if(i == 9) printf("| %d", i+1);
+                else printf("| %d ", i+1);
+            }
             printf(" | ");
-        } printf("\n----------------------------------------------\n");
 
+        }
+        printf("\n----------------------------------------------\t\t");
+        printf("----------------------------------------------\n");
     }
+    free(c);
 }
 
 void fillGrid(Player p) {
@@ -205,19 +242,18 @@ void fillGrid(Player p) {
     
     Ship s;
     int tab_ship[4] = {1, 2, 1, 1}, cpt = 0, val_x, val_y;
+    
     for (int i = 0; i < 4; i++) {
         while (tab_ship[i] != 0) {   
             val_x = rand() % 10;
             val_y = rand() % 10;
-            s = malloc(sizeof(Ship));
-            s->tabCase = NULL;s->length = i+2;
-            s->oriented = cpt % 2 ? VERTICAL : HORIZONTAL;
-            if(s->oriented == VERTICAL && val_x+s->length < 10){
+            s = initShip(i+2, (cpt % 2 ? VERTICAL : HORIZONTAL));
+            if(s->oriented == VERTICAL && (val_x + s->length < 10)){
                 if (addShip(p->grid, s, val_x, val_y)){
                     tab_ship[i]--;
                 }
             }
-            if(s->oriented == HORIZONTAL && val_y+s->length < 10){
+            if(s->oriented == HORIZONTAL && (val_y + s->length < 10)){
                 if (addShip(p->grid, s, val_x, val_y)){
                     tab_ship[i]--;
                 }
@@ -228,47 +264,85 @@ void fillGrid(Player p) {
     }
 }
 
-int shoot(Case **grid, int x, int y) {
+int shoot_standard(Case **grid, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
     La fonction va tirer dans la case indiqué et changé l'état du bateau.
     On retourne 0 si on tire dans l'eau, 1 si la case à déjà été touché, 2 si on touche un bateau. */
 
     Case c = grid[x][y];
+    int res;
 
     if(c->state == NOT_TOUCHED) {
         c->state = TOUCHED;
         if(c->type == SHIP) {
-            return 2;
+            res = 2;
         } else {
-            return 0;
+            res = 0;
         }
     } else {
-        return 1;
+        res = 1;
     }
+
+    free(c);
+    return res;
 }
 
+void initGame(Player *p1, Player *p2) {
+    *p1 = initPlayer("Edward");
+    *p2 = initPlayer("IA");
+}
+
+void startGame(Player p1, Player p2) {
+    /** Fonction qui prend en paramètre un joueur p1, et p2.
+    La fonction va remplir la grille des deux joueurs et lancer le jeu. */
+
+    // initialise pour avoir des positions aléatoires pour chaque joueurs.
+    srand(time(NULL));
+
+    // on rempli la grille de jeu du joueur p1.
+    fillGrid(p1);
+
+    // on rempli la grille de jeu du joueur p2.
+    fillGrid(p2);
+}
+
+void playGame(Player p1, Player p2) {
+
+    // On demande à l'utilisateur les coordonées de la case qu'il veut tirer.
+    int cord_x, cord_y, cord_valide = 0;
+    char *cord;
+
+    while(!cord_valide) {
+
+        printf("\nA quelle case voulez-vous tirer ? (exemple : B2) : ");
+        scanf("%s", cord);
+
+
+        char letter = cord[0];
+        cord_x = atoi(cord+1);
+        if(letter >= 'A' && letter <= 'J' && cord_x >= 1 && cord_x <= 10) {
+            cord_y = letter - 'A';
+            cord_x -= 1;
+            cord_valide = 1;
+        } else {
+            printf("'%s' n'est pas une case valide.\n", cord);
+        }
+        free(cord);
+    }
+
+    // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.
+}
 /** Fonction main */
 void main() {
-    srand(time(NULL));
-    Player p = initPlayer("Edward", 10);
 
-    fillGrid(p);
-    printGrid(p->grid);
+    // On déclare les deux joeuurs.
+    Player p1, p2;
 
-    int x, y;
+    // On initialise la partie avant de commencer.
+    initGame(&p1, &p2);
 
-    Ship s = malloc(sizeof(Ship));
-    s->length = 1;s->oriented = HORIZONTAL; s->tabCase = NULL;
-
-    printf("Entrez une coordonne : \n");
-    scanf("%d", &x);
-    scanf("%d", &y);
-
-    addShip(p->grid, s, x, y);
-    
-    printGrid(p->grid);
-
-    printf("%d", s->tabCase[0]->state);
-
-
+    // On lance le jeu.
+    startGame(p1, p2);
+    shoot_standard(p2->grid, 1, 7);
+    printGrid(p1, p2);
 }
