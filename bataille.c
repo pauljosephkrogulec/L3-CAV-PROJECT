@@ -175,6 +175,7 @@ int addShip(Case **grid, Ship s, int x, int y) {
 
     // on libére l'espace mémoire stocké par le tableau de case temporaire.
     free(tab_tmp);
+
     // on retourne 1 pour dire que le bateau à bien été ajouté.
     return 1;
 
@@ -233,7 +234,6 @@ void printGrid(Player p1, Player p2) {
         printf("\n----------------------------------------------\t\t");
         printf("----------------------------------------------\n");
     }
-    free(c);
 }
 
 void fillGrid(Player p) {
@@ -270,21 +270,17 @@ int shoot_standard(Case **grid, int x, int y) {
     On retourne 0 si on tire dans l'eau, 1 si la case à déjà été touché, 2 si on touche un bateau. */
 
     Case c = grid[x][y];
-    int res;
 
     if(c->state == NOT_TOUCHED) {
         c->state = TOUCHED;
         if(c->type == SHIP) {
-            res = 2;
+            return 2;
         } else {
-            res = 0;
+            return 0;
         }
     } else {
-        res = 1;
+        return 1;
     }
-
-    free(c);
-    return res;
 }
 
 void initGame(Player *p1, Player *p2) {
@@ -293,44 +289,44 @@ void initGame(Player *p1, Player *p2) {
 }
 
 void startGame(Player p1, Player p2) {
-    /** Fonction qui prend en paramètre un joueur p1, et p2.
-    La fonction va remplir la grille des deux joueurs et lancer le jeu. */
+    /** Fonction qui prend en paramètre un joueur p1, et lance le jeu. */
 
-    // initialise pour avoir des positions aléatoires pour chaque joueurs.
     srand(time(NULL));
-
-    // on rempli la grille de jeu du joueur p1.
+    // on rempli la grille de jeu du joueur.
     fillGrid(p1);
-
-    // on rempli la grille de jeu du joueur p2.
     fillGrid(p2);
 }
 
 void playGame(Player p1, Player p2) {
 
     // On demande à l'utilisateur les coordonées de la case qu'il veut tirer.
-    int cord_x, cord_y, cord_valide = 0;
-    char *cord;
+    int cord_x, cord_y, cord_valide = 0, play = 1;
+    char cord[3];
 
-    while(!cord_valide) {
+    while(play) {
+        cord_valide = 0;
 
-        printf("\nA quelle case voulez-vous tirer ? (exemple : B2) : ");
-        scanf("%s", cord);
+        while(!cord_valide) {
+
+            printf("\nA quelle case voulez-vous tirer ? (exemple : B2) : ");
+            scanf("%s", cord);
 
 
-        char letter = cord[0];
-        cord_x = atoi(cord+1);
-        if(letter >= 'A' && letter <= 'J' && cord_x >= 1 && cord_x <= 10) {
-            cord_y = letter - 'A';
-            cord_x -= 1;
-            cord_valide = 1;
-        } else {
-            printf("'%s' n'est pas une case valide.\n", cord);
+            char letter = cord[0];
+            cord_x = atoi(cord+1);
+            if(letter >= 'A' && letter <= 'J' && cord_x >= 1 && cord_x <= 10) {
+                cord_y = letter - 'A';
+                cord_x -= 1;
+                cord_valide = 1;
+            } else {
+                printf("'%s' n'est pas une case valide.\n", cord);
+            }
         }
-        free(cord);
-    }
 
-    // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.
+        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.
+        shoot_standard(p2->grid, cord_x, cord_y);
+        printGrid(p1, p2);
+    }
 }
 /** Fonction main */
 void main() {
@@ -343,6 +339,6 @@ void main() {
 
     // On lance le jeu.
     startGame(p1, p2);
-    shoot_standard(p2->grid, 1, 7);
     printGrid(p1, p2);
+    playGame(p1, p2);
 }
