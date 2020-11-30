@@ -185,33 +185,54 @@ void printGrid(Player p1, Player p2) {
     /** Fonction qui prend en paramètre deux joueurs (p1, p2),
     et va afficher les grilles des deux joueurs l'une à côté de l'autre. */
 
+    Case c;
+
+    printf("\t\tGrille de %s \t\t\t\t\tGrille de l'%s\n", p1->name, p2->name);
+    printf("----------------------------------------------\t\t");
     printf("----------------------------------------------\n");
     printf("|    |");
-    for(int i = 0; i < SIZE_GRID; i++) {
-        printf(" %c |", 'a' + i);
-    } printf("\n----------------------------------------------\n");
+    for(int i = 0; i < SIZE_GRID * 2; i++) {
+        if(i == SIZE_GRID) printf("\t\t|    |");
+        printf(" %c |", 'A' + (i % SIZE_GRID));
+    }
+    printf("\n----------------------------------------------\t\t");
+    printf("----------------------------------------------\n");
 
     for(int i = 0; i < SIZE_GRID; i++) {
         
         if(i == 9) printf("| %d | ", i+1);
         else printf("| %d  | ", i+1);
-        for(int j = 0; j < SIZE_GRID;j++) {
-            if(p1->grid[i][j]->state == TOUCHED) {
-                if(p1->grid[i][j]->type == SHIP) {
+        for(int j = 0; j < SIZE_GRID * 2;j++) {
+
+            if(j < SIZE_GRID) {
+                c = p1->grid[i][j];
+            } else {
+                c = p2->grid[i][j%SIZE_GRID];
+            }
+
+            if(c->state == TOUCHED) {
+                if(c->type == SHIP) {
                     printf("#");
                 } else {
                     printf("X");
                 }
             } else {
-                if(p1->grid[i][j]->type == SHIP) {
+                if(c->type == SHIP) {
                     printf("O");
                 } else {
                     printf(" ");
                 }
             }
+            if(j == SIZE_GRID -1) {
+                printf(" |\t\t");
+                if(i == 9) printf("| %d", i+1);
+                else printf("| %d ", i+1);
+            }
             printf(" | ");
-        } printf("\n----------------------------------------------\n");
 
+        }
+        printf("\n----------------------------------------------\t\t");
+        printf("----------------------------------------------\n");
     }
 }
 
@@ -247,7 +268,7 @@ void fillGrid(Player p) {
     }
 }
 
-int shoot(Case **grid, int x, int y) {
+int shoot_standard(Case **grid, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
     La fonction va tirer dans la case indiqué et changé l'état du bateau.
     On retourne 0 si on tire dans l'eau, 1 si la case à déjà été touché, 2 si on touche un bateau. */
@@ -265,6 +286,20 @@ int shoot(Case **grid, int x, int y) {
         return 1;
     }
 }
+
+void initGame(Player *p1, Player *p2) {
+    *p1 = initPlayer("Edward");
+    *p2 = initPlayer("IA");
+}
+
+void startGame(Player p1, Player p2) {
+    /** Fonction qui prend en paramètre un joueur p1, et lance le jeu. */
+
+    srand(time(NULL));
+    // on rempli la grille de jeu du joueur.
+    fillGrid(p1);
+    fillGrid(p2);
+}
 int deadShip(Ship s){
     if(s->state == DESTROYED){
         return 1;
@@ -272,7 +307,7 @@ int deadShip(Ship s){
     {
         int i=0;
         while (i<s->length && s->tabCase[i]->state == TOUCHED) i++;
-        if(i<s->length){
+        if(i==s->length){
             s->state=DESTROYED;
             return 1;
         }
@@ -285,30 +320,55 @@ int deadShips(Player p){
     int i = 0; int destroyed=0;
     while (i<p->nbShip) 
     {
-        if (deadShip(p->tab_ship[i])==0) return 0;
+        if (deadShip(p->tab_ship[i])==0) return 1;
 
         i++;
     }
-    return 1;
+    return 0;
 }
+void playGame(Player p1, Player p2) {
 
-void startGame(Player p1) {
-    /** Fonction qui prend en paramètre un joueur p1, et lance le jeu. */
+    // On demande à l'utilisateur les coordonées de la case qu'il veut tirer.
+    int cord_x, cord_y, cord_valide = 0, play = 1;
+    char cord[3];
 
-    // on rempli la grille de jeu du joueur.
-    fillGrid(p1);
+    while(play) {
+        cord_valide = 0;
+
+        while(!cord_valide) {
+
+            printf("\nA quelle case voulez-vous tirer ? (exemple : B2) : ");
+            scanf("%s", cord);
+
+
+            char letter = cord[0];
+            cord_x = atoi(cord+1);
+            if(letter >= 'A' && letter <= 'J' && cord_x >= 1 && cord_x <= 10) {
+                cord_y = letter - 'A';
+                cord_x -= 1;
+                cord_valide = 1;
+            } else {
+                printf("'%s' n'est pas une case valide.\n", cord);
+            }
+        }
+
+        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.
+        shoot_standard(p2->grid, cord_x, cord_y);
+        printGrid(p1, p2);
+        play=deadShips(p2);
+    }
 }
-
 /** Fonction main */
 void main() {
 
-    // On initialise les deux joueurs de la partie.
-    Player p1 = initPlayer("Edward");
-    Player p2 = initPlayer("IA");
+    // On déclare les deux joeuurs.
+    Player p1, p2;
+
+    // On initialise la partie avant de commencer.
+    initGame(&p1, &p2);
 
     // On lance le jeu.
-    startGame(p1);
-
-    // On affiche la grille des deux joueurs.
+    startGame(p1, p2);
     printGrid(p1, p2);
+    playGame(p1, p2);
 }
