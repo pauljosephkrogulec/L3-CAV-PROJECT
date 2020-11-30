@@ -34,6 +34,14 @@ enum stateShip {
     DESTROYED, ALIVE
 };
 
+enum typeShip {
+    /** On définit l'énumation de tous les type de bateau.
+    CARRIER = 5 cases (porte-avion), CRUISER = 4 cases (croiseur), 
+    DESTROYER = 3 cases (destroyer), SUBMARINE = 3 cases (sous-marin) et TORPEDO = 2 cases (torpilleur) */
+
+    CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO
+};
+
 // On déclare les structures.
 typedef struct _Case {
     /** On définit la structure d'une case composé des ses positions (x, y), 
@@ -54,6 +62,7 @@ typedef struct _Ship {
     int length;
     enum orientedShip oriented;
     enum stateShip state;
+    enum typeShip type;
 } *Ship;
 
 typedef struct _Player {
@@ -99,7 +108,7 @@ Player initPlayer(char *name) {
     return p;
 }
 
-Ship initShip(int l, enum orientedShip o) {
+Ship initShip(int l, enum orientedShip o, enum typeShip t) {
     /** Prend en paramètre la longueur et l'orientation d'un bateau.
     La fonction va initialiser un bateau ses valeurs par défaud et les valeurs en paramètre.. */
 
@@ -108,6 +117,7 @@ Ship initShip(int l, enum orientedShip o) {
     s->length = l;
     s->oriented = o;
     s->state = ALIVE;
+    s->type = t;
     return s;
 }
 
@@ -236,31 +246,39 @@ void printGrid(Player p1, Player p2) {
     }
 }
 
-void fillGrid(Player p) {
-    /** Fonction qui prend en paramètre un joueur p,
-    et va remplir aléatoirement sa grille de jeu de nbShip bateaux. */
+void fillGrid(Case **g, enum typeShip *tabShip, int nbShips) {
+    /** Fonction qui prend en paramètre la grille de jeu d'un joueur, le tableau des types de bateaux à ajoutés 
+    ainsi que leurs nombres, et va remplir aléatoirement sa grille de jeu de nbShips bateaux. */
     
     Ship s;
-    int tab_ship[4] = {1, 2, 1, 1}, cpt = 0, val_x, val_y;
+    int i = 0, val_x, val_y, lenShip;
     
-    for (int i = 0; i < 4; i++) {
-        while (tab_ship[i] != 0) {   
-            val_x = rand() % 10;
-            val_y = rand() % 10;
-            s = initShip(i+2, (cpt % 2 ? VERTICAL : HORIZONTAL));
-            if(s->oriented == VERTICAL && (val_x + s->length < 10)){
-                if (addShip(p->grid, s, val_x, val_y)){
-                    tab_ship[i]--;
-                }
+    while(i < nbShips) {
+
+        if(tabShip[i] == CARRIER) {
+            lenShip = 5;
+        } else if(tabShip[i] == CRUISER) {
+            lenShip = 4;
+        } else if(tabShip[i] == SUBMARINE || tabShip[i] == DESTROYER) {
+            lenShip = 3;
+        } else {
+            lenShip = 2;
+        }
+
+        val_x = rand() % 10;
+        val_y = rand() % 10;
+        s = initShip(lenShip, (i % 2 ? VERTICAL : HORIZONTAL), tabShip[i]);
+
+        if(s->oriented == VERTICAL && (val_x + s->length < 10)){
+            if(addShip(g, s, val_x, val_y)) {
+                i++;
             }
-            if(s->oriented == HORIZONTAL && (val_y + s->length < 10)){
-                if (addShip(p->grid, s, val_x, val_y)){
-                    tab_ship[i]--;
-                }
+        }
+        if(s->oriented == HORIZONTAL && (val_y + s->length < 10)){
+            if(addShip(g, s, val_x, val_y)) {
+                i++;
             }
-            cpt++;
-            free(s);
-        }    
+        }
     }
 }
 
@@ -292,9 +310,10 @@ void startGame(Player p1, Player p2) {
     /** Fonction qui prend en paramètre un joueur p1, et lance le jeu. */
 
     srand(time(NULL));
+    enum typeShip tabShip[5] = {CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO};
     // on rempli la grille de jeu du joueur.
-    fillGrid(p1);
-    fillGrid(p2);
+    fillGrid(p1->grid, tabShip, 5);
+    fillGrid(p2->grid, tabShip, 5);
 }
 
 void playGame(Player p1, Player p2) {
@@ -328,6 +347,8 @@ void playGame(Player p1, Player p2) {
         printGrid(p1, p2);
     }
 }
+
+
 /** Fonction main */
 void main() {
 
@@ -340,5 +361,4 @@ void main() {
     // On lance le jeu.
     startGame(p1, p2);
     printGrid(p1, p2);
-    playGame(p1, p2);
 }
