@@ -282,22 +282,41 @@ void fillGrid(Case **g, enum typeShip *tabShip, int nbShips) {
     }
 }
 
-int shoot_standard(Case **grid, int x, int y) {
+Case *standardShoot(Case **grid, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
-    La fonction va tirer dans la case indiqué et changé l'état du bateau.
-    On retourne 0 si on tire dans l'eau, 1 si la case à déjà été touché, 2 si on touche un bateau. */
+    La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
 
-    Case c = grid[x][y];
+    Case *caseCible = malloc(sizeof(Case));
+    caseCible[0] = grid[x][y];
+    return caseCible;
+}
 
-    if(c->state == NOT_TOUCHED) {
-        c->state = TOUCHED;
-        if(c->type == SHIP) {
-            return 2;
-        } else {
-            return 0;
+Case *squareShoot(Case **grid, int x, int y) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
+
+    Case *caseCible = malloc(sizeof(Case) * 10);
+    int nbCase = 0;
+    for(int i = x-1; i < x + 2;i++) {
+        if(i >= 0 && i < SIZE_GRID) {
+            for(int j = y-1; j < y + 2;j++) {
+                if(j >= 0 && j < SIZE_GRID) {
+                    caseCible[nbCase++] = grid[i][j];
+                }
+            }
         }
-    } else {
-        return 1;
+    }
+    
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    return caseCible;
+}
+
+int shoot(Case *caseCible) {
+    /** Fonction qui prend en paramètre un tableau de case ciblées,
+     et va tirer dans chacunes des cases du tableau. */
+
+    for(int i = 0; caseCible[i];i++) {
+        caseCible[i]->state = TOUCHED;
     }
 }
 
@@ -323,6 +342,8 @@ void playGame(Player p1, Player p2) {
     char cord[3];
 
     while(play) {
+
+        printGrid(p1, p2);
         cord_valide = 0;
 
         while(!cord_valide) {
@@ -342,23 +363,18 @@ void playGame(Player p1, Player p2) {
             }
         }
 
-        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.
-        shoot_standard(p2->grid, cord_x, cord_y);
-        printGrid(p1, p2);
+        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.        
+        Case *tab = squareShoot(p1->grid, cord_x, cord_y);
+        shoot(tab);
     }
 }
-
 
 /** Fonction main */
 void main() {
 
-    // On déclare les deux joeuurs.
+    // On déclare les deux joeuurs et on les initialises.
     Player p1, p2;
-
-    // On initialise la partie avant de commencer.
     initGame(&p1, &p2);
-
-    // On lance le jeu.
-    startGame(p1, p2);
     printGrid(p1, p2);
+    playGame(p1, p2);
 }
