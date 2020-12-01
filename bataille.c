@@ -481,10 +481,10 @@ void playGame(Player p1, Player p2) {
                 tab = squareShoot(p2->grid, cord_x, cord_y);
             }
             else if (tir == 3 && isAlive(p1,SUBMARINE)){
-                tab = lineShootH(p2->grid, cord_y);
+                tab = lineShootH(p2->grid, cord_x);
             }
             else if (tir == 4 && isAlive(p1,SUBMARINE)){
-                tab = lineShootV(p2->grid, cord_x);
+                tab = lineShootV(p2->grid, cord_y);
             }
             else if (tir == 5 && isAlive(p1,CRUISER)){
                 tab = crossShoot(p2->grid, cord_x,cord_y);
