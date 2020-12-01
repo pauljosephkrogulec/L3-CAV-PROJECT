@@ -129,7 +129,7 @@ int addShip(Case **grid, Ship s, int x, int y) {
     Case *tab_tmp = malloc(sizeof(Case) * s->length), c;
 
     // on déclare le tableau de cases du bateau.
-    s->tabCase = malloc(sizeof(Case) * s->length);
+    if(s->tabCase == NULL) s->tabCase = malloc(sizeof(Case) * s->length);
 
     // si les coordonnées indiqués ne sont pas dans la grille, on ne fait rien.
     if(x < 0 || x > SIZE_GRID || y < 0 || y > SIZE_GRID) {
@@ -246,12 +246,15 @@ void printGrid(Player p1, Player p2) {
     }
 }
 
-void fillGrid(Case **g, enum typeShip *tabShip, int nbShips) {
+void fillGrid(Player p, enum typeShip *tabShip, int nbShips) {
     /** Fonction qui prend en paramètre la grille de jeu d'un joueur, le tableau des types de bateaux à ajoutés 
     ainsi que leurs nombres, et va remplir aléatoirement sa grille de jeu de nbShips bateaux. */
     
     Ship s;
+    Case **g = p->grid;
     int i = 0, val_x, val_y, lenShip;
+
+    p->tab_ship = malloc(sizeof(Ship) * nbShips); 
     
     while(i < nbShips) {
 
@@ -271,11 +274,13 @@ void fillGrid(Case **g, enum typeShip *tabShip, int nbShips) {
 
         if(s->oriented == VERTICAL && (val_x + s->length < 10)){
             if(addShip(g, s, val_x, val_y)) {
+                p->tab_ship[i] = s;
                 i++;
             }
         }
         if(s->oriented == HORIZONTAL && (val_y + s->length < 10)){
             if(addShip(g, s, val_x, val_y)) {
+                p->tab_ship[i] = s;
                 i++;
             }
         }
@@ -398,8 +403,8 @@ void startGame(Player p1, Player p2) {
     srand(time(NULL));
     enum typeShip tabShip[5] = {CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO};
     // on rempli la grille de jeu du joueur.
-    fillGrid(p1->grid, tabShip, 5);
-    fillGrid(p2->grid, tabShip, 5);
+    fillGrid(p1, tabShip, 5);
+    fillGrid(p2, tabShip, 5);
 }
 
 void playGame(Player p1, Player p2) {
@@ -433,6 +438,7 @@ void playGame(Player p1, Player p2) {
         // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.        
         Case *tab = plusShoot(p1->grid, cord_x, cord_y);
         shoot(tab);
+        printf("%d", p1->tab_ship[0]->length);
     }
 }
 
