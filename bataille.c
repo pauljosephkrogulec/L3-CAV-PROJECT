@@ -306,8 +306,36 @@ Case *squareShoot(Case **grid, int x, int y) {
             }
         }
     }
-    
     caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    
+    return caseCible;
+}
+
+Case *lineShootH(Case **grid, int x) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
+
+    Case *caseCible = malloc(sizeof(Case) * SIZE_GRID);
+    int nbCase = 0;
+    for(int i = 0; i < SIZE_GRID;i++) {
+        caseCible[nbCase++] = grid[x][i];
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    
+    return caseCible;
+}
+
+Case *lineShootV(Case **grid, int y) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
+
+    Case *caseCible = malloc(sizeof(Case) * SIZE_GRID);
+    int nbCase = 0;
+    for(int i = 0; i < SIZE_GRID;i++) {
+        caseCible[nbCase++] = grid[i][y];
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    
     return caseCible;
 }
 
@@ -364,7 +392,7 @@ void playGame(Player p1, Player p2) {
         }
 
         // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.        
-        Case *tab = squareShoot(p1->grid, cord_x, cord_y);
+        Case *tab = lineShootH(p1->grid, cord_x);
         shoot(tab);
     }
 }
@@ -375,6 +403,7 @@ void main() {
     // On déclare les deux joeuurs et on les initialises.
     Player p1, p2;
     initGame(&p1, &p2);
-    printGrid(p1, p2);
+
+    startGame(p1, p2);
     playGame(p1, p2);
 }
