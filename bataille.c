@@ -414,7 +414,18 @@ int shoot(Case *caseCible) {
 }
 
 void initGame(Player *p1, Player *p2) {
-    *p1 = initPlayer("Edward");
+
+    puts("-------- BATAILLE NAVALE --------");
+    puts("Règles : La bataille navale oppose deux joueurs qui s'affrontent. Chacun a une flotte composée de 5 bateaux, qui sont, en général, les suivants :");
+    puts("1 porte-avion (5 cases), 1 croiseur (4 cases), 1 destroyer (3 cases), 1 sous-marin (3 cases), 1 torpilleur (2 cases)");
+    puts("Les bateaux ne doivent pas être collés entre eux.\n");
+
+    char *name = malloc(sizeof(char) * 25);
+
+    printf("Indiquez le nom du joueur n°1 : ");
+    scanf("%s", name);
+
+    *p1 = initPlayer(name);
     *p2 = initPlayer("IA");
 }
 
@@ -438,63 +449,91 @@ int isAlive(Player p,enum typeShip t){
 void playGame(Player p1, Player p2) {
 
     // On demande à l'utilisateur les coordonées de la case qu'il veut tirer.
-    int cord_x, cord_y, cord_valide = 0, play = 1,tir=0;
-    char cord[3];
-    Case * tab;
+    int cord_x, cord_y, cords_valid = 0, play = 1, user_shoot = 0, shoot_valid = 0, shoot_line_valid = 0;
+    char cords[3]; char line_shoot[1];
+    Case *tabCases;
 
     while(play) {
 
         printGrid(p1, p2);
-        cord_valide = 0;
+        cords_valid = 0;
 
-        while(!cord_valide) {
+        while(!cords_valid) {
 
-            printf("\nA quelle case voulez-vous tirer ? (exemple : B2) : ");
-            scanf("%s", cord);
+            printf("\nA quelle case voulez-vous tirer ? (exemple : B2)\n> ");
+            scanf("%s", cords);
 
 
-            char letter = cord[0];
-            cord_x = atoi(cord+1);
+            char letter = cords[0];
+            cord_x = atoi(cords+1);
             if(letter >= 'A' && letter <= 'J' && cord_x >= 1 && cord_x <= 10) {
                 cord_y = letter - 'A';
                 cord_x -= 1;
-                cord_valide = 1;
+                cords_valid = 1;
             } else {
-                printf("'%s' n'est pas une case valide.\n", cord);
+                printf("'%s' n'est pas une case valide.\n", cords);
             }
         }
 
+        shoot_valid = 0;
+
         // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.        
         // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.       
-        do
-        {
-            do
-        {
-            printf("Quelle tire voulez-vous utilisez ? \n1 : tir normal \n2 : tir en carre\n3 : tir en ligne\n4 : tir en colonne\n5 : tir en croix\n6 : tir en plus\n");
-            scanf("%d",&tir);
-        } while (tir < 1 || tir > 6);
-            
-            if( tir == 1){
-                tab = standardShoot(p2->grid, cord_x, cord_y);
+        while (!shoot_valid) {
+
+            user_shoot = 0;
+            while (user_shoot < 1 || user_shoot > 6) {
+                puts("Liste des tirs possibles :\n1 > Tir normal (permet de viser une case)");
+                puts("2 > Tir en ligne (permet de viser toute une ligne ou toute une colonne de la grille en une fois)");
+                puts("3 > Tir en croix (permet de viser en une seule fois un ”x” centré sur une case et de 3 cases de circonférence)");
+                puts("4 > Tir en plus (permet de viser en une seule fois un ”+” centré sur une case et de 3 cases de circonférence)");
+                puts("5 > Tir en carée (permet de viser en une seule fois un carr´e de 3 cases par 3 centré sur une case)\n");
+                
+                printf("Quel type de tir voulez-vous utiliser ? (exemple : 1)\n> ");
+                scanf("%d", &user_shoot);
             }
-            else if (tir == 2 && isAlive(p1,CARRIER)){
-                tab = squareShoot(p2->grid, cord_x, cord_y);
+
+            switch (user_shoot) {
+                case 1:
+                    tabCases = standardShoot(p2->grid, cord_x, cord_y);
+                    break;
+                case 2:
+                    shoot_line_valid = 0;
+                    while(!shoot_line_valid) {
+                        puts("Choix de sens possible :");
+                        puts("L > En ligne");
+                        puts("C > En colonne\n");
+
+                        printf("Dans quel sens s'effectue le tir en ligne ? (exemple : C)\n> ");
+                        scanf("%s", line_shoot);
+
+                        if(line_shoot[0] == 'C') {
+                            tabCases = lineShootV(p2->grid, cord_y);
+                            shoot_line_valid = 1;
+                        } else if(line_shoot[0] == 'L') {
+                            tabCases = lineShootH(p2->grid, cord_y);
+                            shoot_line_valid = 1;
+                        }
+                    }
+                    break;
+                case 3:
+                    tabCases = crossShoot(p2->grid, cord_x,cord_y);
+                    break;
+                case 4:
+                    tabCases = plusShoot(p2->grid, cord_x,cord_y);
+                    break;
+                case 5:
+                    tabCases = squareShoot(p2->grid, cord_x,cord_y);
+                    break;            
+                default:
+                    break;
             }
-            else if (tir == 3 && isAlive(p1,SUBMARINE)){
-                tab = lineShootH(p2->grid, cord_x);
-            }
-            else if (tir == 4 && isAlive(p1,SUBMARINE)){
-                tab = lineShootV(p2->grid, cord_y);
-            }
-            else if (tir == 5 && isAlive(p1,CRUISER)){
-                tab = crossShoot(p2->grid, cord_x,cord_y);
-            }
-            else if (tir == 6 && isAlive(p1,CRUISER)){
-                tab = plusShoot(p2->grid, cord_x,cord_y);
-            }
-        } while (tab == NULL);
-        shoot(tab);
-        play=deadShips(p2);
+            shoot_valid = 1;
+        }
+
+        // On tir dans chaque cases du tableau de cases ciblées.
+        shoot(tabCases);
+        play = deadShips(p2);
     }
 }
 
