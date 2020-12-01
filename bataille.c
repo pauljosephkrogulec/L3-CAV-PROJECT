@@ -291,9 +291,77 @@ Case *standardShoot(Case **grid, int x, int y) {
     return caseCible;
 }
 
+Case *lineShootH(Case **grid, int x) {
+    /** Prend en paramètre une grille de jeu, et un ligne x de cette grille.
+    La fonction concerne un tir sur l'ensemble des cases de la ligne horizontale (x) donnée en paramètre. */
+
+    Case *caseCible = malloc(sizeof(Case) * SIZE_GRID);
+    int nbCase = 0;
+    for(int i = 0; i < SIZE_GRID;i++) {
+        caseCible[nbCase++] = grid[x][i];
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    
+    return caseCible;
+}
+
+Case *lineShootV(Case **grid, int y) {
+    /** Prend en paramètre une grille de jeu, et un ligne y de cette grille.
+    La fonction concerne un tir sur l'ensemble des cases de la ligne verticale (y) donnée en paramètre. */
+
+    Case *caseCible = malloc(sizeof(Case) * SIZE_GRID);
+    int nbCase = 0;
+    for(int i = 0; i < SIZE_GRID;i++) {
+        caseCible[nbCase++] = grid[i][y];
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    
+    return caseCible;
+}
+
+Case *crossShoot(Case **grid, int x, int y) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
+
+    Case *caseCible = malloc(sizeof(Case) * 6);
+    caseCible[0] = grid[x][y];
+    int nbCase = 1;
+    for(int i = x-1; i < x + 2;i++) {
+        if(i >= 0 && i < SIZE_GRID) {
+            for(int j = y-1; j < y + 2;j++) {
+                if(j >= 0 && j < SIZE_GRID && i != x && j != y) {
+                    caseCible[nbCase++] = grid[i][j];
+                }
+            }
+        }
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    return caseCible;
+}
+
+Case *plusShoot(Case **grid, int x, int y) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
+
+    Case *caseCible = malloc(sizeof(Case) * 6);
+    caseCible[0] = grid[x][y];
+    int nbCase = 1;
+    for(int i = x-1; i < x + 2;i++) {
+        if(i >= 0 && i < SIZE_GRID) {
+            for(int j = y-1; j < y + 2;j++) {
+                if(j >= 0 && j < SIZE_GRID && i == x || j == y) {
+                    caseCible[nbCase++] = grid[i][j];
+                }
+            }
+        }
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    return caseCible;
+}
+
 Case *squareShoot(Case **grid, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
-    La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
+    La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
 
     Case *caseCible = malloc(sizeof(Case) * 10);
     int nbCase = 0;
@@ -307,35 +375,6 @@ Case *squareShoot(Case **grid, int x, int y) {
         }
     }
     caseCible = realloc(caseCible, sizeof(Case) * nbCase);
-    
-    return caseCible;
-}
-
-Case *lineShootH(Case **grid, int x) {
-    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
-    La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
-
-    Case *caseCible = malloc(sizeof(Case) * SIZE_GRID);
-    int nbCase = 0;
-    for(int i = 0; i < SIZE_GRID;i++) {
-        caseCible[nbCase++] = grid[x][i];
-    }
-    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
-    
-    return caseCible;
-}
-
-Case *lineShootV(Case **grid, int y) {
-    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
-    La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
-
-    Case *caseCible = malloc(sizeof(Case) * SIZE_GRID);
-    int nbCase = 0;
-    for(int i = 0; i < SIZE_GRID;i++) {
-        caseCible[nbCase++] = grid[i][y];
-    }
-    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
-    
     return caseCible;
 }
 
@@ -392,7 +431,7 @@ void playGame(Player p1, Player p2) {
         }
 
         // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.        
-        Case *tab = lineShootH(p1->grid, cord_x);
+        Case *tab = plusShoot(p1->grid, cord_x, cord_y);
         shoot(tab);
     }
 }
