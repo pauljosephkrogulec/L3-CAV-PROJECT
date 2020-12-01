@@ -102,9 +102,9 @@ Player initPlayer(char *name) {
 
     Player p = malloc(sizeof(Player));
     p->name = name;
-    p->nbShip = p->nbShip_alive = 0;
+    p->nbShip = p->nbShip_alive = 5;
+    p->tab_ship = malloc(sizeof(Ship) * p->nbShip);
     p->grid = initGrid();
-    p->tab_ship = NULL;
     return p;
 }
 
@@ -246,13 +246,13 @@ void printGrid(Player p1, Player p2) {
     }
 }
 
-void fillGrid(Case **g, enum typeShip *tabShip, int nbShips) {
+void fillGrid(Player p, enum typeShip *tabShip, int nbShips) {
     /** Fonction qui prend en paramètre la grille de jeu d'un joueur, le tableau des types de bateaux à ajoutés 
     ainsi que leurs nombres, et va remplir aléatoirement sa grille de jeu de nbShips bateaux. */
-    
+    Case ** g = p->grid;
     Ship s;
     int i = 0, val_x, val_y, lenShip;
-    
+
     while(i < nbShips) {
 
         if(tabShip[i] == CARRIER) {
@@ -271,15 +271,41 @@ void fillGrid(Case **g, enum typeShip *tabShip, int nbShips) {
 
         if(s->oriented == VERTICAL && (val_x + s->length < 10)){
             if(addShip(g, s, val_x, val_y)) {
-                i++;
+                p->tab_ship[i++] = s;
             }
         }
         if(s->oriented == HORIZONTAL && (val_y + s->length < 10)){
             if(addShip(g, s, val_x, val_y)) {
-                i++;
+                p->tab_ship[i++] = s;
             }
         }
     }
+}
+
+int deadShip(Ship s){
+    if(s->state == DESTROYED){
+        return 0;
+    } else
+    {
+        int i=0;
+        while (i<s->length && s->tabCase[i]->state == TOUCHED) i++;
+        if(i==s->length){
+            s->state=DESTROYED;
+            return 0;
+        }
+    }
+    return 1;
+    
+}
+
+int deadShips(Player p){
+    int i = 0;
+    while (i<p->nbShip) 
+    {
+        if (deadShip(p->tab_ship[i])) return 1;
+        i++;
+    }
+    return 0;
 }
 
 Case *standardShoot(Case **grid, int x, int y) {
@@ -291,9 +317,77 @@ Case *standardShoot(Case **grid, int x, int y) {
     return caseCible;
 }
 
+Case *lineShootH(Case **grid, int x) {
+    /** Prend en paramètre une grille de jeu, et un ligne x de cette grille.
+    La fonction concerne un tir sur l'ensemble des cases de la ligne horizontale (x) donnée en paramètre. */
+
+    Case *caseCible = malloc(sizeof(Case) * SIZE_GRID);
+    int nbCase = 0;
+    for(int i = 0; i < SIZE_GRID;i++) {
+        caseCible[nbCase++] = grid[x][i];
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    
+    return caseCible;
+}
+
+Case *lineShootV(Case **grid, int y) {
+    /** Prend en paramètre une grille de jeu, et un ligne y de cette grille.
+    La fonction concerne un tir sur l'ensemble des cases de la ligne verticale (y) donnée en paramètre. */
+
+    Case *caseCible = malloc(sizeof(Case) * SIZE_GRID);
+    int nbCase = 0;
+    for(int i = 0; i < SIZE_GRID;i++) {
+        caseCible[nbCase++] = grid[i][y];
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    
+    return caseCible;
+}
+
+Case *crossShoot(Case **grid, int x, int y) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
+
+    Case *caseCible = malloc(sizeof(Case) * 6);
+    caseCible[0] = grid[x][y];
+    int nbCase = 1;
+    for(int i = x-1; i < x + 2;i++) {
+        if(i >= 0 && i < SIZE_GRID) {
+            for(int j = y-1; j < y + 2;j++) {
+                if(j >= 0 && j < SIZE_GRID && i != x && j != y) {
+                    caseCible[nbCase++] = grid[i][j];
+                }
+            }
+        }
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    return caseCible;
+}
+
+Case *plusShoot(Case **grid, int x, int y) {
+    /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
+    La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
+
+    Case *caseCible = malloc(sizeof(Case) * 6);
+    caseCible[0] = grid[x][y];
+    int nbCase = 1;
+    for(int i = x-1; i < x + 2;i++) {
+        if(i >= 0 && i < SIZE_GRID) {
+            for(int j = y-1; j < y + 2;j++) {
+                if(j >= 0 && j < SIZE_GRID && i == x || j == y) {
+                    caseCible[nbCase++] = grid[i][j];
+                }
+            }
+        }
+    }
+    caseCible = realloc(caseCible, sizeof(Case) * nbCase);
+    return caseCible;
+}
+
 Case *squareShoot(Case **grid, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
-    La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
+    La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
 
     Case *caseCible = malloc(sizeof(Case) * 10);
     int nbCase = 0;
@@ -306,7 +400,6 @@ Case *squareShoot(Case **grid, int x, int y) {
             }
         }
     }
-    
     caseCible = realloc(caseCible, sizeof(Case) * nbCase);
     return caseCible;
 }
@@ -331,16 +424,23 @@ void startGame(Player p1, Player p2) {
     srand(time(NULL));
     enum typeShip tabShip[5] = {CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO};
     // on rempli la grille de jeu du joueur.
-    fillGrid(p1->grid, tabShip, 5);
-    fillGrid(p2->grid, tabShip, 5);
+    fillGrid(p1, tabShip, 5);
+    fillGrid(p2, tabShip, 5);
+}
+
+int isAlive(Player p,enum typeShip t){
+    for(int i = 0;i < p->nbShip;i++){
+        if (p->tab_ship[i]->type == t && deadShip(p->tab_ship[i])) return 1;
+    }
+    return 0;
 }
 
 void playGame(Player p1, Player p2) {
 
     // On demande à l'utilisateur les coordonées de la case qu'il veut tirer.
-    int cord_x, cord_y, cord_valide = 0, play = 1,tir = 0;
-    Case *tab;
+    int cord_x, cord_y, cord_valide = 0, play = 1,tir=0;
     char cord[3];
+    Case * tab;
 
     while(play) {
 
@@ -363,18 +463,38 @@ void playGame(Player p1, Player p2) {
                 printf("'%s' n'est pas une case valide.\n", cord);
             }
         }
-        
-        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.       
-        printf("Quelle tire voulez-vous utilisez ? \n1 : tir normal \n2 : tir en carre :  ");
-        scanf("%d",&tir);
-        if( tir == 1){
-            tab = standardShoot(p2->grid, cord_x, cord_y);
 
-        }
-        else if (tir == 2){
-            tab = squareShoot(p2->grid, cord_x, cord_y);
-        }
+        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.        
+        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.       
+        do
+        {
+            do
+        {
+            printf("Quelle tire voulez-vous utilisez ? \n1 : tir normal \n2 : tir en carre\n3 : tir en ligne\n4 : tir en colonne\n5 : tir en croix\n6 : tir en plus\n");
+            scanf("%d",&tir);
+        } while (tir < 1 || tir > 6);
+            
+            if( tir == 1){
+                tab = standardShoot(p2->grid, cord_x, cord_y);
+            }
+            else if (tir == 2 && isAlive(p1,CARRIER)){
+                tab = squareShoot(p2->grid, cord_x, cord_y);
+            }
+            else if (tir == 3 && isAlive(p1,SUBMARINE)){
+                tab = lineShootH(p2->grid, cord_y);
+            }
+            else if (tir == 4 && isAlive(p1,SUBMARINE)){
+                tab = lineShootV(p2->grid, cord_x);
+            }
+            else if (tir == 5 && isAlive(p1,CRUISER)){
+                tab = crossShoot(p2->grid, cord_x,cord_y);
+            }
+            else if (tir == 6 && isAlive(p1,CRUISER)){
+                tab = plusShoot(p2->grid, cord_x,cord_y);
+            }
+        } while (tab == NULL);
         shoot(tab);
+        play=deadShips(p2);
     }
 }
 
@@ -384,6 +504,7 @@ void main() {
     // On déclare les deux joeuurs et on les initialises.
     Player p1, p2;
     initGame(&p1, &p2);
-    printGrid(p1, p2);
+
+    startGame(p1, p2);
     playGame(p1, p2);
 }
