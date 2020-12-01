@@ -227,7 +227,7 @@ void printGrid(Player p1, Player p2) {
                     printf("X");
                 }
             } else {
-                if(c->type == SHIP) {
+                if(c->type == SHIP && j < SIZE_GRID) {
                     printf("O");
                 } else {
                     printf(" ");
