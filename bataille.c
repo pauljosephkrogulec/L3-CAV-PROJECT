@@ -290,7 +290,7 @@ int deadShip(Ship s){
         int i=0;
         while (i<s->length && s->tabCase[i]->state == TOUCHED) i++;
         if(i==s->length){
-            s->state=DESTROYED;
+            s->state = DESTROYED;
             return 0;
         }
     }
@@ -439,41 +439,54 @@ void startGame(Player p1, Player p2) {
     fillGrid(p2, tabShip, 5);
 }
 
-int isAlive(Player p,enum typeShip t){
+int isAlive(Player p,enum typeShip t) {
+    /** Fonction qui prend en paramètre un joueur et un type de bateau.
+    On va regarder dans sa liste de bateau, celui avec le type "t" est en vie. 1 si il l'est, 0 sinon. */
+    
     for(int i = 0;i < p->nbShip;i++){
         if (p->tab_ship[i]->type == t && deadShip(p->tab_ship[i])) return 1;
     }
     return 0;
 }
 
+int *askCords() {
+    /** Fonction qui ne prend pas de paramètre,
+    et va demander au joueur des coordonées de tirs et les vérifies avant de retourner ce tablaau de coordonées. */
+
+    int *tabCords = malloc(sizeof(int) * 2);
+    int cords_valid = 0, cord_x, cord_y; char letter, *cords;
+
+    while(!cords_valid) {
+
+        printf("\nA quelle case voulez-vous tirer ? (exemple : B2)\n> ");
+        scanf("%s", cords);
+
+        letter = cords[0];
+        cord_x = atoi(cords+1);
+        if(letter >= 'A' && letter <= 'J' && cord_x >= 1 && cord_x <= 10) {
+            tabCords[0] = cord_x - 1;
+            tabCords[1] = letter - 'A';
+            cords_valid = 1;
+        } else {
+            printf("'%s' n'est pas une case valide.\n", cords);
+        }
+    }
+
+    return tabCords;
+}
+
 void playGame(Player p1, Player p2) {
 
     // On demande à l'utilisateur les coordonées de la case qu'il veut tirer.
-    int cord_x, cord_y, cords_valid = 0, play = 1, user_shoot = 0, shoot_valid = 0, shoot_line_valid = 0;
-    char cords[3]; char line_shoot[1];
+    int *tabCords, play = 1, user_shoot = 0, shoot_valid = 0, shoot_line_valid = 0;
+    char line_shoot[1];
     Case *tabCases;
 
     while(play) {
 
+
         printGrid(p1, p2);
-        cords_valid = 0;
-
-        while(!cords_valid) {
-
-            printf("\nA quelle case voulez-vous tirer ? (exemple : B2)\n> ");
-            scanf("%s", cords);
-
-
-            char letter = cords[0];
-            cord_x = atoi(cords+1);
-            if(letter >= 'A' && letter <= 'J' && cord_x >= 1 && cord_x <= 10) {
-                cord_y = letter - 'A';
-                cord_x -= 1;
-                cords_valid = 1;
-            } else {
-                printf("'%s' n'est pas une case valide.\n", cords);
-            }
-        }
+        tabCords = askCords();
 
         shoot_valid = 0;
 
@@ -495,7 +508,7 @@ void playGame(Player p1, Player p2) {
 
             switch (user_shoot) {
                 case 1:
-                    tabCases = standardShoot(p2->grid, cord_x, cord_y);
+                    if (isAlive(p1, CRUISER)) tabCases = standardShoot(p2->grid, tabCords[0], tabCords[1]);
                     break;
                 case 2:
                     shoot_line_valid = 0;
@@ -507,23 +520,21 @@ void playGame(Player p1, Player p2) {
                         printf("Dans quel sens s'effectue le tir en ligne ? (exemple : C)\n> ");
                         scanf("%s", line_shoot);
 
-                        if(line_shoot[0] == 'C') {
-                            tabCases = lineShootV(p2->grid, cord_y);
-                            shoot_line_valid = 1;
-                        } else if(line_shoot[0] == 'L') {
-                            tabCases = lineShootH(p2->grid, cord_y);
-                            shoot_line_valid = 1;
+                        if(line_shoot[0] == 'C' && isAlive(p1, CRUISER)) {
+                            tabCases = lineShootV(p2->grid, tabCords[1]);
+                        } else if(line_shoot[0] == 'L' && isAlive(p1, CRUISER)) {
+                            tabCases = lineShootH(p2->grid, tabCords[1]);
                         }
                     }
                     break;
                 case 3:
-                    tabCases = crossShoot(p2->grid, cord_x,cord_y);
+                    if (isAlive(p1, CRUISER)) tabCases = crossShoot(p2->grid, tabCords[0], tabCords[1]);
                     break;
                 case 4:
-                    tabCases = plusShoot(p2->grid, cord_x,cord_y);
+                    if (isAlive(p1, CRUISER)) tabCases = plusShoot(p2->grid, tabCords[0], tabCords[1]);
                     break;
                 case 5:
-                    tabCases = squareShoot(p2->grid, cord_x,cord_y);
+                    if (isAlive(p1, CRUISER)) tabCases = squareShoot(p2->grid, tabCords[0], tabCords[1]);
                     break;            
                 default:
                     break;
