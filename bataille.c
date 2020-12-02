@@ -77,7 +77,10 @@ typedef struct _Player {
     Ship *tab_ship;
 
     // Le nombre de tirs spéciaux restants.
-    int lineShoot, crossShoot, plusShoot, squareShoot;
+    int line;
+    int cross;
+    int plus;
+    int square;
 } *Player;
 
 /** ----- Fonctions ----- */
@@ -110,7 +113,10 @@ Player initPlayer(char *name) {
     p->grid = initGrid();
 
     // On initialise le nombre de tirs spéciaux à 1 chacun.
-    p->lineShoot = p->crossShoot = p->plusShoot = p->squareShoot = 1;
+    p->line = 1;
+    p->cross = 1;
+    p->plus = 1;
+    p->square = 1;
     return p;
 }
 
@@ -255,8 +261,9 @@ void printGrid(Player p1, Player p2) {
 void fillGrid(Player p, typeShip *tabShip, int nbShips) {
     /** Fonction qui prend en paramètre la grille de jeu d'un joueur, le tableau des types de bateaux à ajoutés 
     ainsi que leurs nombres, et va remplir aléatoirement sa grille de jeu de nbShips bateaux. */
+    
     Case ** g = p->grid;
-    Ship s;
+    Ship s, *tmp = malloc(sizeof(Ship) * nbShips);
     int i = 0, val_x, val_y, lenShip;
 
     while(i < nbShips) {
@@ -277,15 +284,17 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
 
         if(s->oriented == VERTICAL && (val_x + s->length < 10)){
             if(addShip(g, s, val_x, val_y)) {
-                p->tab_ship[i++] = s;
+                tmp[i++] = s;
             }
         }
         if(s->oriented == HORIZONTAL && (val_y + s->length < 10)){
             if(addShip(g, s, val_x, val_y)) {
-                p->tab_ship[i++] = s;
+                
+                tmp[i++] = s;
             }
         }
     }
+    p->tab_ship = tmp;
 }
 
 int deadShip(Ship s){
@@ -395,7 +404,7 @@ Case *squareShoot(Case **grid, int x, int y) {
 
     Case *caseCible = malloc(sizeof(Case) * 10);
     int nbCase = 0;
-    for(int i = x-1; i < x + 2;i++) {
+    for(int i = x-1; i < x + 2; i++) {
         if(i >= 0 && i < SIZE_GRID) {
             for(int j = y-1; j < y + 2;j++) {
                 if(j >= 0 && j < SIZE_GRID) {
@@ -438,23 +447,21 @@ void startGame(Player p1, Player p2) {
 
     srand(time(NULL));
     typeShip tabShip[5] = {CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO};
+
     // on rempli la grille de jeu du joueur.
     fillGrid(p1, tabShip, 5);
     fillGrid(p2, tabShip, 5);
+    
 }
 
 int isAlive(Player p, typeShip t) {
     /** Fonction qui prend en paramètre un joueur et un type de bateau.
     On va regarder dans sa liste de bateau, celui avec le type "t" est en vie. 1 si il l'est, 0 sinon. */
-
-    int i = 0, trouve = 0;
-    while(i < p->nbShip && !trouve) {
-        if(p->tab_ship[i]->type == t && p->tab_ship[i]->state == ALIVE) {
-            trouve = 1;
-        }
-        i++;
+    
+    for(int i = 0;i < p->nbShip;i++){
+        if(p->tab_ship[i]->type == t && deadShip(p->tab_ship[i])) return 1;
     }
-    return trouve;
+    return 0;
 }
 
 int *askCords() {
@@ -491,19 +498,14 @@ void playGame(Player p1, Player p2) {
     Case *tabCases;
 
     while(play) {
-
-
         printGrid(p1, p2);
         tabCords = askCords();
 
         shoot_valid = 0;
         tabCases = NULL;
 
-        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.        
-        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.       
+        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.
         while (!shoot_valid) {
-
-            
             tabCases = NULL;
             user_shoot = 0;
             while (user_shoot < 1 || user_shoot > 6) {
@@ -511,52 +513,58 @@ void playGame(Player p1, Player p2) {
                 puts("2 > Tir en ligne (permet de viser toute une ligne ou toute une colonne de la grille en une fois)");
                 puts("3 > Tir en croix (permet de viser en une seule fois un ”x” centré sur une case et de 3 cases de circonférence)");
                 puts("4 > Tir en plus (permet de viser en une seule fois un ”+” centré sur une case et de 3 cases de circonférence)");
-                puts("5 > Tir en carée (permet de viser en une seule fois un carr´e de 3 cases par 3 centré sur une case)\n");
+                puts("5 > Tir en carée (permet de viser en une seule fois un carré de 3 cases par 3 centré sur une case)\n");
                 
                 printf("Quel type de tir voulez-vous utiliser ? (exemple : 1)\n> ");
                 scanf("%d", &user_shoot);
             }
 
-            if(user_shoot == 1) {
-                tabCases = standardShoot(p2->grid, tabCords[0], tabCords[1]);
-                shoot_valid = 1;
+            switch (user_shoot) {
+                case 1:
+                    if (isAlive(p1, CRUISER)) tabCases = standardShoot(p2->grid, tabCords[0], tabCords[1]);
+                    break;
+                case 2:
+                    shoot_line_valid = 0;
+                    while(!shoot_line_valid) {
+                        puts("Choix de sens possible :");
+                        puts("L > En ligne");
+                        puts("C > En colonne\n");
 
-            } else if(user_shoot == 2 && p1->lineShoot) {
+                        printf("Dans quel sens s'effectue le tir en ligne ? (exemple : C)\n> ");
+                        scanf("%s", line_shoot);
 
-                shoot_line_valid = 0;
-                while(!shoot_line_valid) {
-                    puts("Choix de sens possible :");
-                    puts("L > En ligne");
-                    puts("C > En colonne\n");
-
-                    printf("Dans quel sens s'effectue le tir en ligne ? (exemple : C)\n> ");
-                    scanf("%s", line_shoot);
-
-                    if(line_shoot[0] == 'C') {
-                        tabCases = lineShootV(p2->grid, tabCords[1]);
-                    } else if(line_shoot[0] == 'L') {
-                        tabCases = lineShootH(p2->grid, tabCords[1]);
+                        if(line_shoot[0] == 'C' && isAlive(p1, SUBMARINE)) {
+                            tabCases = lineShootV(p2->grid, tabCords[1]);
+                        } else if(line_shoot[0] == 'L' && isAlive(p1, SUBMARINE)) {
+                            tabCases = lineShootH(p2->grid, tabCords[1]);
+                        }
                     }
-                    shoot_line_valid = 1;
-                }
-                p1->lineShoot = 0;shoot_valid = 1;
-
-            } else if(user_shoot == 3 && p1->crossShoot) {
-                tabCases = crossShoot(p2->grid, tabCords[0], tabCords[1]);
-                p1->crossShoot = 0;shoot_valid = 1;
-
-            } else if(user_shoot == 4 && p1->plusShoot) {
-                tabCases = plusShoot(p2->grid, tabCords[0], tabCords[1]);
-                p1->plusShoot = 0;shoot_valid = 1;
-
-            } else if(user_shoot == 5 && p1->squareShoot ) {
-                tabCases = squareShoot(p2->grid, tabCords[0], tabCords[1]);
-                p1->squareShoot = 0;shoot_valid = 1;
-            } else {
-                puts("Tir invalide ! \nSoit votre bateau effectuant ce tir spécial a été détruit.\nSoit vous avez déjà effectué ce tir.\n");
+                    p1->line = 0;
+                    break;
+                case 3:
+                    printf("cross = %d", p1->cross);
+                    if (isAlive(p1, CRUISER) && p1->cross == 1) {
+                        tabCases = crossShoot(p2->grid, tabCords[0], tabCords[1]);
+                        p1->cross = 0;
+                    }
+                    break;
+                case 4:
+                    if (isAlive(p1, CRUISER) && p1->plus == 1) {
+                        tabCases = plusShoot(p2->grid, tabCords[0], tabCords[1]);
+                        p1->plus = 0;
+                    }
+                    break;
+                case 5:
+                    if (isAlive(p1, CARRIER) && p1->square == 1) {
+                        tabCases = squareShoot(p2->grid, tabCords[0], tabCords[1]);
+                        p1->square = 0;
+                    }
+                    break;            
+                default:
+                    break;
             }
+            if(tabCases != NULL) shoot_valid = 1;
         }
-        printf("il sort");
         // On tir dans chaque cases du tableau de cases ciblées.
         shoot(tabCases);
         play = deadShips(p2);
