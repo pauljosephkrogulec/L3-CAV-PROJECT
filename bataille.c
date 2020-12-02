@@ -350,12 +350,11 @@ Case *crossShoot(Case **grid, int x, int y) {
     La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
 
     Case *caseCible = malloc(sizeof(Case) * 6);
-    caseCible[0] = grid[x][y];
-    int nbCase = 1;
+    int nbCase = 0;
     for(int i = x-1; i < x + 2;i++) {
         if(i >= 0 && i < SIZE_GRID) {
             for(int j = y-1; j < y + 2;j++) {
-                if(j >= 0 && j < SIZE_GRID && i != x && j != y) {
+                if(j >= 0 && j < SIZE_GRID && (i != x && j != y) || (i == x && j == y)) {
                     caseCible[nbCase++] = grid[i][j];
                 }
             }
@@ -370,12 +369,11 @@ Case *plusShoot(Case **grid, int x, int y) {
     La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
 
     Case *caseCible = malloc(sizeof(Case) * 6);
-    caseCible[0] = grid[x][y];
-    int nbCase = 1;
+    int nbCase = 0;
     for(int i = x-1; i < x + 2;i++) {
         if(i >= 0 && i < SIZE_GRID) {
             for(int j = y-1; j < y + 2;j++) {
-                if(j >= 0 && j < SIZE_GRID && i == x || j == y) {
+                if(j >= 0 && j < SIZE_GRID && (i == x || j == y) || (i == x && j == y)) {
                     caseCible[nbCase++] = grid[i][j];
                 }
             }
@@ -505,6 +503,9 @@ void playGame(Player p1, Player p2) {
                 printf("Quel type de tir voulez-vous utiliser ? (exemple : 1)\n> ");
                 scanf("%d", &user_shoot);
             }
+            
+            shoot_valid = 0;
+            tabCases = NULL;
 
             switch (user_shoot) {
                 case 1:
@@ -520,9 +521,9 @@ void playGame(Player p1, Player p2) {
                         printf("Dans quel sens s'effectue le tir en ligne ? (exemple : C)\n> ");
                         scanf("%s", line_shoot);
 
-                        if(line_shoot[0] == 'C' && isAlive(p1, CRUISER)) {
+                        if(line_shoot[0] == 'C' && isAlive(p1, SUBMARINE)) {
                             tabCases = lineShootV(p2->grid, tabCords[1]);
-                        } else if(line_shoot[0] == 'L' && isAlive(p1, CRUISER)) {
+                        } else if(line_shoot[0] == 'L' && isAlive(p1, SUBMARINE)) {
                             tabCases = lineShootH(p2->grid, tabCords[1]);
                         }
                     }
@@ -534,12 +535,12 @@ void playGame(Player p1, Player p2) {
                     if (isAlive(p1, CRUISER)) tabCases = plusShoot(p2->grid, tabCords[0], tabCords[1]);
                     break;
                 case 5:
-                    if (isAlive(p1, CRUISER)) tabCases = squareShoot(p2->grid, tabCords[0], tabCords[1]);
-                    break;            
+                    if (isAlive(p1, CARRIER)) tabCases = squareShoot(p2->grid, tabCords[0], tabCords[1]);
+                    break;
                 default:
                     break;
             }
-            shoot_valid = 1;
+            if(tabCases != NULL) shoot_valid = 1
         }
 
         // On tir dans chaque cases du tableau de cases ciblées.
