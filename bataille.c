@@ -75,6 +75,8 @@ typedef struct _Player {
     int nbShip_alive;
     Case **grid;
     Ship *tab_ship;
+    // Le nombre de tirs spéciaux restants.
+    int lineShoot, crossShoot, plusShoot, squareShoot;
 } *Player;
 
 /** ----- Fonctions ----- */
@@ -105,6 +107,8 @@ Player initPlayer(char *name) {
     p->nbShip = p->nbShip_alive = 5;
     p->tab_ship = malloc(sizeof(Ship) * p->nbShip);
     p->grid = initGrid();
+    // On initialise le nombre de tirs spéciaux à 1 chacun.
+    p->lineShoot = p->crossShoot = p->plusShoot = p->squareShoot = 1;
     return p;
 }
 
@@ -520,26 +524,28 @@ void playGame(Player p1, Player p2) {
                         printf("Dans quel sens s'effectue le tir en ligne ? (exemple : C)\n> ");
                         scanf("%s", line_shoot);
 
-                        if(line_shoot[0] == 'C' && isAlive(p1, CRUISER)) {
+                        if(line_shoot[0] == 'C' && isAlive(p1, SUBMARINE) && p1->lineShoot) {
                             tabCases = lineShootV(p2->grid, tabCords[1]);
-                        } else if(line_shoot[0] == 'L' && isAlive(p1, CRUISER)) {
+                            p1->lineShoot=0;
+                        } else if(line_shoot[0] == 'L' && isAlive(p1, SUBMARINE) && p1->lineShoot) {
                             tabCases = lineShootH(p2->grid, tabCords[1]);
+                            p1->lineShoot=0;
                         }
                     }
                     break;
                 case 3:
-                    if (isAlive(p1, CRUISER)) tabCases = crossShoot(p2->grid, tabCords[0], tabCords[1]);
+                    if (isAlive(p1, CRUISER) && p1->crossShoot) {tabCases = crossShoot(p2->grid, tabCords[0], tabCords[1]); p1->crossShoot=0;}
                     break;
                 case 4:
-                    if (isAlive(p1, CRUISER)) tabCases = plusShoot(p2->grid, tabCords[0], tabCords[1]);
+                    if (isAlive(p1, CRUISER) && p1->plusShoot) {tabCases = plusShoot(p2->grid, tabCords[0], tabCords[1]);p1->plusShoot=0;}
                     break;
                 case 5:
-                    if (isAlive(p1, CRUISER)) tabCases = squareShoot(p2->grid, tabCords[0], tabCords[1]);
+                    if (isAlive(p1, CARRIER) && p1->squareShoot) {tabCases = squareShoot(p2->grid, tabCords[0], tabCords[1]);p1->squareShoot=0;}
                     break;            
                 default:
                     break;
             }
-            shoot_valid = 1;
+            if(tabCases != NULL) shoot_valid = 1;
         }
 
         // On tir dans chaque cases du tableau de cases ciblées.
