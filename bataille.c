@@ -1,7 +1,9 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 // On déclare quelques constantes...
 #define SIZE_GRID 10
 
@@ -110,7 +112,7 @@ Player initPlayer(char *name) {
     p->grid = initGrid();
 
     // On initialise le nombre de tirs spéciaux à 1 chacun.
-    p->line = p->cross = p->plus = p->square = 1;
+    //p->line = p->cross = p->plus = p->square = 1;
     return p;
 }
 
@@ -139,6 +141,9 @@ int addShip(Case **grid, Ship s, int x, int y) {
 
     // si les coordonnées indiqués ne sont pas dans la grille, on ne fait rien.
     if(x < 0 || x > SIZE_GRID || y < 0 || y > SIZE_GRID) {
+        free(s->tabCase);
+        free(s);
+        free(tab_tmp);
         return 0;
     }
 
@@ -186,10 +191,14 @@ int addShip(Case **grid, Ship s, int x, int y) {
     // Sinon, cela veut dire qu'on à rencontré une erreur, et on n'ajoute pas le bateau.
     } else {
     // on retourne 0 pour dire que le bateau n'à pas été ajouté.
+        free(s->tabCase);
+        free(s);
+        free(tab_tmp);
         return 0;
     }
-
+    
     // on libére l'espace mémoire stocké par le tableau de case temporaire.
+
     free(tab_tmp);
 
     // on retourne 1 pour dire que le bateau à bien été ajouté.
@@ -283,12 +292,17 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
         }
         if(s->oriented == HORIZONTAL && (val_y + s->length < 10)){
             if(addShip(g, s, val_x, val_y)) {
-                
                 tmp[i++] = s;
-            }
+            } 
         }
     }
     p->tab_ship = tmp;
+    for (i = 0; i < s->length; i++)
+    {
+        s->tabCase = NULL;
+    }
+    free(s->tabCase);
+    
 }
 
 int deadShip(Ship s){
@@ -445,7 +459,6 @@ void startGame(Player p1, Player p2) {
     // on rempli la grille de jeu du joueur.
     fillGrid(p1, tabShip, 5);
     fillGrid(p2, tabShip, 5);
-    
 }
 
 int isAlive(Player p, typeShip t) {
@@ -484,97 +497,154 @@ int *askCords() {
     return tabCords;
 }
 
-void playGame(Player p1, Player p2) {
+void askShoot(Player p, Player op, int *tabCords) {
+    /** Prend en paramètre le joueur, son adversaire et les coordonnées de la case ciblée. 
+    La fonction va demander au joueur le tir de son choix, et va effectuer ce tir si les conditions sont bien respectés. 
+    (si le tir spécial n'a pas déjà été utilisé et que le bateau associé n'est pas détruit) */
 
-    // On demande à l'utilisateur les coordonées de la case qu'il veut tirer.
-    int *tabCords, play = 1, user_shoot = 0, shoot_valid = 0, shoot_line_valid = 0;
+    Case *tabCases = NULL;
+    int user_shoot = 0, shoot_valid = 0, shoot_line_valid = 0;
     char line_shoot[1];
-    Case *tabCases;
 
-    while(play) {
-        printGrid(p1, p2);
-        tabCords = askCords();
-
-        shoot_valid = 0;
-        tabCases = NULL;
-
-        // Une fois que les coordonnées sont récupérées, on lui demande quel tire il choisit.
-        while (!shoot_valid) {
-            tabCases = NULL;
-            user_shoot = 0;
-            while (user_shoot < 1 || user_shoot > 6) {
-                puts("Liste des tirs possibles :\n1 > Tir normal (permet de viser une case)");
-                puts("2 > Tir en ligne (permet de viser toute une ligne ou toute une colonne de la grille en une fois)");
-                puts("3 > Tir en croix (permet de viser en une seule fois un ”x” centré sur une case et de 3 cases de circonférence)");
-                puts("4 > Tir en plus (permet de viser en une seule fois un ”+” centré sur une case et de 3 cases de circonférence)");
-                puts("5 > Tir en carée (permet de viser en une seule fois un carré de 3 cases par 3 centré sur une case)\n");
-                
-                printf("Quel type de tir voulez-vous utiliser ? (exemple : 1)\n> ");
-                scanf("%d", &user_shoot);
-            }
-
-            if(user_shoot == 1) {
-                tabCases = standardShoot(p2->grid, tabCords[0], tabCords[1]);
-
-            } else if(user_shoot == 2 && p1->line) {
-                if(isAlive(p1, SUBMARINE)) {
-                    shoot_line_valid = 0;
-                    while(!shoot_line_valid) {
-                        puts("Choix de sens possible :");
-                        puts("L > En ligne");
-                        puts("C > En colonne\n");
-
-                        printf("Dans quel sens s'effectue le tir en ligne ? (exemple : C)\n> ");
-                        scanf("%s", line_shoot);
-
-                        if(line_shoot[0] == 'C') {
-                            tabCases = lineShootV(p2->grid, tabCords[1]);
-                        } else if(line_shoot[0] == 'L') {
-                            tabCases = lineShootH(p2->grid, tabCords[1]);
-                        }
-                        shoot_line_valid = 1;
-                    }
-                    p1->line = 0;
-                } else {
-                    printf("> Vous ne pouvez pas tirer car votre SOUS-MARIN a été détruit !\n");                    
-                }
-
-            } else if(user_shoot == 3 && p1->cross) {
-                if(isAlive(p1, CRUISER)) {
-                    tabCases = crossShoot(p2->grid, tabCords[0], tabCords[1]);
-                    p1->cross = 0;
-                } else {
-                    printf("> Vous ne pouvez pas tirer car votre CROISEUR a été détruit !\n");                    
-                }
-
-            } else if(user_shoot == 4 && p1->plus) {
-                if(isAlive(p1, CRUISER)) {
-                    tabCases = plusShoot(p2->grid, tabCords[0], tabCords[1]);
-                    p1->plus = 0;
-                } else {
-                    printf("> Vous ne pouvez pas tirer car votre CROISEUR a été détruit !\n");                    
-                }
-
-            } else if(user_shoot == 5 && p1->square) {
-                if(isAlive(p1, CARRIER)) {
-                    tabCases = squareShoot(p2->grid, tabCords[0], tabCords[1]);
-                    p1->square = 0;
-                } else {
-                    printf("> Vous ne pouvez pas tirer car votre PORTE-AVION a été détruit !\n");                    
-                }
-            } else {
-                puts("> Vous avez déjà effectué ce tir !\n");
-            }
-
-            // Si le tableau est bien rempli, on s'arrête.
-            if(tabCases != NULL) shoot_valid = 1; 
+    while (!shoot_valid) {
+        user_shoot = 0;
+        while (user_shoot < 1 || user_shoot > 6) {
+            puts("Liste des tirs possibles :\n1 > Tir normal (permet de viser une case)");
+            puts("2 > Tir en ligne (permet de viser toute une ligne ou toute une colonne de la grille en une fois)");
+            puts("3 > Tir en croix (permet de viser en une seule fois un ”x” centré sur une case et de 3 cases de circonférence)");
+            puts("4 > Tir en plus (permet de viser en une seule fois un ”+” centré sur une case et de 3 cases de circonférence)");
+            puts("5 > Tir en carée (permet de viser en une seule fois un carré de 3 cases par 3 centré sur une case)\n");
+            
+            printf("Quel type de tir voulez-vous utiliser ? (exemple : 1)\n> ");
+            scanf("%d", &user_shoot);
         }
-        // On tir dans chaque cases du tableau de cases ciblées.
-        shoot(tabCases);
-        play = deadShips(p2);
+
+        if(user_shoot == 1) {
+            tabCases = standardShoot(op->grid, tabCords[0], tabCords[1]);
+
+        } else if(user_shoot == 2 && p->line) {
+            if(isAlive(p, SUBMARINE)) {
+                shoot_line_valid = 0;
+                while(!shoot_line_valid) {
+                    puts("Choix de sens possible :");
+                    puts("L > En ligne");
+                    puts("C > En colonne\n");
+
+                    printf("Dans quel sens s'effectue le tir en ligne ? (exemple : C)\n> ");
+                    scanf("%s", line_shoot);
+
+                    if(line_shoot[0] == 'C') {
+                        tabCases = lineShootV(op->grid, tabCords[1]);
+                    } else if(line_shoot[0] == 'L') {
+                        tabCases = lineShootH(op->grid, tabCords[1]);
+                    }
+                    shoot_line_valid = 1;
+                }
+                p->line = 0;
+            } else {
+                printf("> Vous ne pouvez pas tirer car votre SOUS-MARIN a été détruit !\n");                    
+            }
+
+        } else if(user_shoot == 3 && p->cross) {
+            if(isAlive(p, CRUISER)) {
+                tabCases = crossShoot(op->grid, tabCords[0], tabCords[1]);
+                p->cross = 0;
+            } else {
+                printf("> Vous ne pouvez pas tirer car votre CROISEUR a été détruit !\n");                    
+            }
+
+        } else if(user_shoot == 4 && p->plus) {
+            if(isAlive(p, CRUISER)) {
+                tabCases = plusShoot(op->grid, tabCords[0], tabCords[1]);
+                p->plus = 0;
+            } else {
+                printf("> Vous ne pouvez pas tirer car votre CROISEUR a été détruit !\n");                    
+            }
+
+        } else if(user_shoot == 5 && p->square) {
+            if(isAlive(p, CARRIER)) {
+                tabCases = squareShoot(op->grid, tabCords[0], tabCords[1]);
+                p->square = 0;
+            } else {
+                printf("> Vous ne pouvez pas tirer car votre PORTE-AVION a été détruit !\n");                    
+            }
+        } else {
+            puts("> Vous avez déjà effectué ce tir !\n");
+        }
+
+        // Si le tableau est bien rempli, on s'arrête.
+        if(tabCases != NULL) shoot_valid = 1; 
+    }
+
+    // On tir dans chaque cases du tableau de cases ciblées.
+    shoot(tabCases);
+    for (int i = 0; tabCases[i]; i++)
+    {
+        tabCases[i] = NULL;
+    }
+    free(tabCases);
+}
+
+void playGame(Player p1, Player p2) {
+    /** Prend en paramètre deux joueurs p1 et p2.
+    La fonction va s'occuper du déroulement de la partie entre les deux joueurs. */
+
+
+    int *tabCords, play = 1;
+    Player p = p1, op = p2, tmp;
+
+    // Le jeu continue tant que les deux joueurs ont encore au moins un bateau en vie.
+    while(play) {
+
+        // En fonction du point de vu du joueur à qui c'est le tour...
+        // on lui affiche la grille (de son point de vue)
+        printGrid(p, op);
+
+        printf("C'est au tour de %s !", p->name);
+
+        // On lui demander à quelle coordonnées tirer.
+        tabCords = askCords();
+        
+        // on demande puis effectue le tir aux coordonnées indiquées.
+        askShoot(p, op, tabCords);
+
+        // on vérifie si les bateaux adverses ne sont pas tous détruit.
+        // Si c'est le cas, le jeu s'arrête, sinon on continue.
+        play = 0;
+        tmp = p; p = op, op = tmp;
+        free(tabCords);
+        
     }
 }
 
+void clean(Player p1,Player p2){
+    free(p1->name);
+    int i,j;
+     for (i = 0; i < SIZE_GRID; i++)
+    {
+        for ( j = 0; j < SIZE_GRID; j++)
+        {
+            free(p1->grid[i][j]);
+            free(p2->grid[i][j]);
+        }
+        free(p1->grid[i]);
+        free(p2->grid[i]);
+    }
+    for ( i = 0; i < p1->nbShip; i++)
+    {
+        free(p1->tab_ship[i]->tabCase);
+        free(p2->tab_ship[i]->tabCase);
+        free(p1->tab_ship[i]);
+        free(p2->tab_ship[i]);
+    }
+    free(p1->tab_ship);
+    free(p2->tab_ship);
+   
+    free(p1->grid);
+    free(p2->grid);
+    free(p1);
+    free(p2);
+}
 /** Fonction main */
 void main() {
 
@@ -584,4 +654,5 @@ void main() {
 
     startGame(p1, p2);
     playGame(p1, p2);
+    clean(p1,p2);
 }
