@@ -380,7 +380,7 @@ int isAlive(Player p, typeShip t) {
 }
 
 int shipsDestroyed(Player p) {
-    /** Fonction qui prend en paramètre un joueur p;
+    /** Fonction qui prend en paramètre un joueur p,
     et va regarder si tous ses bateaux sont détruits. Si c'est le cas, on retourne 1 si c'est vrai, 0 sinon. */
 
     int nbShipsAlive = 0, stat;
@@ -388,11 +388,12 @@ int shipsDestroyed(Player p) {
     for(int i = 0; i < p->nbShip; i++) {
         stat = isDestroyed(p->tab_ship[i]);
         if (stat == 2) {
-            printf("Un bateau de %s vient d'être détruit !", p->name);
+            printf("Un bateau de %s vient d'être détruit !\n", p->name);
         } else if(stat == 0) {
             nbShipsAlive++;
         }
     }
+    p->nbShip_alive = nbShipsAlive;
     if(!nbShipsAlive) return 1;
     return 0;
 }
@@ -697,7 +698,6 @@ void roundOrdi(Ordi ord, Player p1) {
         valShoot = shoot(tabCases);
         if(valShoot == 1) {
             ord->history[val_x][val_y] = 1;
-            printf("bateau trouve\n");
             ord->state = ORIENTATION;
         } else {
             ord->history[val_x][val_y] = 0;
@@ -735,6 +735,16 @@ void roundOrdi(Ordi ord, Player p1) {
             ord->history[val_x][val_y] = 1;
             ord->shootOriented = tmp;
             ord->state = DESTRUCTION;
+
+            int nbS_1 = p1->nbShip_alive;
+            shipsDestroyed(p1);
+            int nbS_2 = p1->nbShip_alive;
+
+            if(nbS_1 != nbS_2) {
+                ord->state = RESEARCH;
+            } else {
+                ord->state = DESTRUCTION;
+            }
         } else {
             ord->history[val_x][val_y] = 0;
         }
@@ -800,11 +810,29 @@ void roundOrdi(Ordi ord, Player p1) {
         if(valShoot == 1) {
             ord->history[val_x][val_y] = 1;
             ord->lastCase = p1->grid->cases[val_x][val_y];
-            
+            int nbS_1 = p1->nbShip_alive;
+            shipsDestroyed(p1);
+            int nbS_2 = p1->nbShip_alive;
+
+            if(nbS_1 != nbS_2) {
+                ord->state = RESEARCH;
+                ord->lastCase = NULL;
+                puts("\non recommence a zero\n");
+            }
+
+
         } else {
             ord->history[val_x][val_y] = 0;
+
+            if(ord->shootOriented == TOP) ord->shootOriented = BOTTOM;
+            if(ord->shootOriented == BOTTOM) ord->shootOriented = TOP;
+            if(ord->shootOriented == LEFT) ord->shootOriented = RIGHT;
+            if(ord->shootOriented == RIGHT) ord->shootOriented = LEFT;
         }
     }
+
+    
+    printf("> %s a effectué un tir en %c%d.\n", ord->ordi->name, 'A' + val_y, val_x+1);
 }
 
 void playGame(Player p1, Ordi ord) {
