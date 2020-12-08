@@ -298,23 +298,23 @@ void printGrid(Player p1, Player p2) {
 
     printf("\n\t\tGrille de %s \t\t\t\t\tGrille de l'%s\n", p1->name, p2->name);
 
-    for(int i = 0; i < (p1->grid->length * 2) - 2;i++) {
-        printf("-----");
-        if(i == p1->grid->length - 2) printf("-\t\t");
+    for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
+        printf("-");
+        if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
     } printf("-\n|    |");
     for(int i = 0; i < p1->grid->length * 2; i++) {
         if(i == p1->grid->length) printf("\t\t|    |");
         printf(" %c |", 'A' + (i % p1->grid->length));
     } printf("\n");
 
-    for(int i = 0; i < (p1->grid->length * 2) - 2;i++) {
-        printf("-----");
-        if(i == p1->grid->length - 2) printf("-\t\t");
+    for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
+        printf("-");
+        if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
     } printf("-\n");
 
     for(int i = 0; i < p1->grid->length; i++) {
         
-        if(i == (p1->grid->length - 1)) printf("| %d | ", i+1);
+        if((i+1) > 9) printf("| %d | ", i+1);
         else printf("| %d  | ", i+1);
         for(int j = 0; j < p1->grid->length * 2;j++) {
 
@@ -339,14 +339,17 @@ void printGrid(Player p1, Player p2) {
             }
             if(j == p1->grid->length - 1) {
                 printf(" |\t\t");
-                if(i == (p1->grid->length - 1)) printf("| %d", i+1);
+                if((i+1) > 9) printf("| %d", i+1);
                 else printf("| %d ", i+1);
             }
             printf(" | ");
 
         }
-        printf("\n----------------------------------------------\t\t");
-        printf("----------------------------------------------\n");
+        printf("\n");
+        for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
+            printf("-");
+            if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
+        } printf("-\n");
     }
 }
 
@@ -518,13 +521,19 @@ void initGame(Player *p1, Ordi *ord) {
     puts("Les bateaux ne doivent pas être collés entre eux.\n");
 
     char *name = malloc(sizeof(char) * 25);
+    int sizeGrid = 0;
+
+    while(sizeGrid < 8 || sizeGrid > 15) {
+        printf("Indiquez la taille de la grille des joueurs (la taille doit-être comprise entre 8 et 15 pour un total de 5 navires)\n> ");
+        scanf("%d", &sizeGrid);
+    }
 
     printf("Indiquez le nom du joueur n°1 :\n> ");
     scanf("%s", name);
     
 
-    *p1 = initPlayer(name, 10);
-    *ord = initOrdi(10);
+    *p1 = initPlayer(name, sizeGrid);
+    *ord = initOrdi(sizeGrid);
 }
 
 int *askCords() {
