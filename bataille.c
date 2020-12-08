@@ -304,23 +304,23 @@ void printGrid(Player p1, Player p2) {
 
     printf("\n\t\tGrille de %s \t\t\t\t\tGrille de l'%s\n", p1->name, p2->name);
 
-    for(int i = 0; i < (p1->grid->length * 2) - 2;i++) {
-        printf("-----");
-        if(i == p1->grid->length - 2) printf("-\t\t");
+    for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
+        printf("-");
+        if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
     } printf("-\n|    |");
     for(int i = 0; i < p1->grid->length * 2; i++) {
         if(i == p1->grid->length) printf("\t\t|    |");
         printf(" %c |", 'A' + (i % p1->grid->length));
     } printf("\n");
 
-    for(int i = 0; i < (p1->grid->length * 2) - 2;i++) {
-        printf("-----");
-        if(i == p1->grid->length - 2) printf("-\t\t");
+    for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
+        printf("-");
+        if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
     } printf("-\n");
 
     for(int i = 0; i < p1->grid->length; i++) {
         
-        if(i == (p1->grid->length - 1)) printf("| %d | ", i+1);
+        if((i+1) > 9) printf("| %d | ", i+1);
         else printf("| %d  | ", i+1);
         for(int j = 0; j < p1->grid->length * 2;j++) {
 
@@ -345,17 +345,19 @@ void printGrid(Player p1, Player p2) {
             }
             if(j == p1->grid->length - 1) {
                 printf(" |\t\t");
-                if(i == (p1->grid->length - 1)) printf("| %d", i+1);
+                if((i+1) > 9) printf("| %d", i+1);
                 else printf("| %d ", i+1);
             }
             printf(" | ");
 
         }
-        printf("\n----------------------------------------------\t\t");
-        printf("----------------------------------------------\n");
+        printf("\n");
+        for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
+            printf("-");
+            if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
+        } printf("-\n");
     }
 }
-
 int isDestroyed(Ship s) {
     /** Fonction qui prend en paramètre un bateau, 
     et va regarder si ce bateau est détruit. Si toutes ces cases ont été touchées, on actualise son statut,
@@ -524,13 +526,18 @@ void initGame(Player *p1, Ordi *ord) {
     puts("Les bateaux ne doivent pas être collés entre eux.\n");
 
     char *name = malloc(sizeof(char) * 25);
+    int sizeGrid = 0;
 
+    while(sizeGrid < 8 || sizeGrid > 15) {
+        printf("Indiquez la taille de la grille des joueurs (comprise entre 8 et 15) :\n> ");
+        scanf("%d", &sizeGrid);
+    }
     printf("Indiquez le nom du joueur n°1 :\n> ");
     scanf("%s", name);
     
 
-    *p1 = initPlayer(name, 10);
-    *ord = initOrdi(10);
+    *p1 = initPlayer(name, sizeGrid);
+    *ord = initOrdi(sizeGrid);
 }
 
 int *askCords() {
@@ -654,7 +661,7 @@ void manageShoot(Player p, Player op, int *tabCords) {
                     if(line_shoot[0] == 'C') {
                         tabCases = lineShootV(op->grid, tabCords[1]);
                     } else if(line_shoot[0] == 'L') {
-                        tabCases = lineShootH(op->grid, tabCords[1]);
+                        tabCases = lineShootH(op->grid, tabCords[0]);
                     }
                     shoot_line_valid = 1;
                 }
@@ -948,10 +955,15 @@ void playGame(Player p1, Ordi ord) {
         // on vérifie si les bateaux adverses ne sont pas tous détruit.
         if(shipsDestroyed(ia->ordi)) {
             // Si c'est le cas, le jeu s'arrête, sinon on continue.
+            puts("Partie terminé ! Vous avez détruit l'ensemble des navires ennemis.");
             end = 1;
         } else {
             // Sinon, on effectue le round du joueur 2 (soit l'IA).
             roundOrdi(ia, p);
+            if(shipsDestroyed(p1)) {
+                puts("Partie terminé ! L'ORDI à détruit l'ensemble de vos navires.");
+                end = 1;
+            }
         }
     }
 }
