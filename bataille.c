@@ -524,7 +524,7 @@ void initGame(Player *p1, Ordi *ord) {
     int sizeGrid = 0;
 
     while(sizeGrid < 8 || sizeGrid > 15) {
-        printf("Indiquez la taille de la grille des joueurs (la taille doit-être comprise entre 8 et 15 pour un total de 5 navires)\n> ");
+        printf("Indiquez la taille de la grille des joueurs (comprise entre 8 et 15) :\n> ");
         scanf("%d", &sizeGrid);
     }
 
@@ -948,11 +948,16 @@ void playGame(Player p1, Ordi ord) {
 
         // on vérifie si les bateaux adverses ne sont pas tous détruit.
         if(shipsDestroyed(ia->ordi)) {
-            // Si c'est le cas, le jeu s'arrête, sinon on continue.
+            // Si c'est le cas, le jeu s'arrête.
+            puts("Partie terminé ! Vous avez détruit l'ensemble des navires ennemis.");
             end = 1;
         } else {
             // Sinon, on effectue le round du joueur 2 (soit l'IA).
             roundOrdi(ia, p);
+            if(shipsDestroyed(p1)) {
+                puts("Partie terminé ! L'ORDI à détruit l'ensemble de vos navires.");
+                end = 1;
+            }
         }
     }
 }
