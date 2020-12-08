@@ -1,4 +1,3 @@
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,7 +96,7 @@ typedef struct _Player {
     Grid grid;
     Ship *tab_ship;
     // Le nombre de tirs spéciaux restants.
-    int  * shoot;
+    int *shoot;
 } *Player;
 
 typedef struct _Ordi {
@@ -140,12 +139,12 @@ Player initPlayer(char *name, int lenGrid) {
     Player p = malloc(sizeof(Player));
     p->name = name;
     p->nbShip = p->nbShip_alive = 5;
+    p->tab_ship = malloc(sizeof(Ship) * p->nbShip);
     p->grid = initGrid(lenGrid);
+
+    // On initialise le nombre de tirs spéciaux à 1 chacun.
     p->shoot = malloc(sizeof(int)*4);
-    p->shoot[0] = 1;
-    p->shoot[1] = 1;
-    p->shoot[2] = 1;
-    p->shoot[3] = 1;
+    for (int i = 0;i <4;i++) p->shoot[i] = 1;
     return p;
 }
 
@@ -168,7 +167,6 @@ Ordi initOrdi(int lenGrid) {
             o->history[i][j] = -1;
         }
     }
-
     return o;
 }
 
@@ -247,9 +245,10 @@ int addShip(Grid g, Ship s, int x, int y) {
     // Sinon, cela veut dire qu'on à rencontré une erreur, et on n'ajoute pas le bateau.
     } else {
     // on retourne 0 pour dire que le bateau n'à pas été ajouté.
+    
         free(s->tabCase);
-        free(tab_tmp);
         free(s);
+        free(tab_tmp);
         return 0;
     }
 
@@ -265,7 +264,7 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
     ainsi que leurs nombres, et va remplir aléatoirement sa grille de jeu de nbShips bateaux. */
     
     Grid g = p->grid;
-    Ship s, *tmp = malloc(sizeof(Ship) * nbShips);
+    Ship s;
     int i = 0, val_x, val_y, lenShip;
 
     while(i < nbShips) {
@@ -286,16 +285,15 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
 
         if(s->oriented == VERTICAL && (val_x + s->length < p->grid->length)){
             if(addShip(g, s, val_x, val_y)) {
-                tmp[i++] = s;
+                p->tab_ship[i++] = s;
             }
-        } else if(s->oriented == HORIZONTAL && (val_y + s->length < p->grid->length)){
+        }
+        else if(s->oriented == HORIZONTAL && (val_y + s->length < p->grid->length)){
             if(addShip(g, s, val_x, val_y)) {
-                
-                tmp[i++] = s;
+                p->tab_ship[i++] = s;
             }
         } else free(s);
     }
-    p->tab_ship = tmp;
 }
 
 void printGrid(Player p1, Player p2) {
@@ -519,6 +517,7 @@ void initGame(Player *p1, Ordi *ord) {
     /** Fonction qui prend en paramètre deux joueurs, et les initialises.
     On retourne également le nombre de joueurs présent dans la partie (hormis l'ORDI). */
 
+    srand(time(NULL));
     puts("-------- BATAILLE NAVALE --------");
     puts("Règles : La bataille navale oppose deux joueurs qui s'affrontent. Chacun a une flotte composée de 5 bateaux, qui sont, en général, les suivants :");
     puts("1 porte-avion (5 cases), 1 croiseur (4 cases), 1 destroyer (3 cases), 1 sous-marin (3 cases), 1 torpilleur (2 cases)");
@@ -526,22 +525,94 @@ void initGame(Player *p1, Ordi *ord) {
 
     char *name = malloc(sizeof(char) * 25);
 
-    printf("Indiquez le nom du joueur n°1 : ");
+    printf("Indiquez le nom du joueur n°1 :\n> ");
     scanf("%s", name);
+    
 
     *p1 = initPlayer(name, 10);
     *ord = initOrdi(10);
 }
 
-void startGame(Player p1, Player p2) {
-    /** Fonction qui prend en paramètre un joueur p1, et lance le jeu. */
+int *askCords() {
+    /** Fonction qui ne prend aucun paramètre, et va demander des coordonnées tant qu'ils ne sont pas valide.
+    Si les coordonnées sont valides, on les retournes dans un tableau [x, y]. */
 
-    srand(time(NULL));
-    typeShip tabShip[5] = {CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO};
+    int *tabCords = malloc(sizeof(int) * 2);
+    int cords_valid = 0, cord_x, cord_y, user_shoot; char cords[3];
 
-    // on rempli la grille de jeu du joueur.
-    fillGrid(p1, tabShip, 5);
-    fillGrid(p2, tabShip, 5);
+    while(!cords_valid) {
+        scanf("%s", cords);
+
+        cord_x = atoi(cords+1);
+        if(cords[0] >= 'A' && cords[0] <= 'J' && cord_x >= 1 && cord_x <= 10) {
+            tabCords[0] = cord_x - 1;
+            tabCords[1] = cords[0] - 'A';
+            cords_valid = 1;
+        } else {
+            printf("'%s' n'est pas une case valide.\n", cords);
+        }
+    }
+
+    return tabCords;
+}
+
+void placeShips(Player p, typeShip *tabShip, int nbShips) {
+    /** Prend en paramètre un joueur, un tableau de bateau à assigner, et leurs nombres.
+    La fonction va demander au joueur les coordonnées des bateau à placer. */
+
+    int ships_placed = 0, *cords, ch_orientation = 0, lenShip, res = 0;
+    Ship s; OrientationShip o;
+    
+    while(ships_placed < nbShips) {
+
+        ch_orientation = 0;
+        printf("Indiquez les coordonnées pour placer votre ");
+        switch (tabShip[ships_placed]) {
+            case CARRIER:
+                printf("porte-avion de 5 cases :\n> ");
+                lenShip = 5;
+                break;
+        
+            case CRUISER:
+                printf("croiseur de 4 cases :\n> ");
+                lenShip = 4;
+                break;
+        
+            case DESTROYER:
+                printf("destroyer de 3 cases :\n> ");
+                lenShip = 3;
+                break;
+            case SUBMARINE:
+                printf("sous-marin de 3 cases :\n> ");
+                lenShip = 3;
+                break;
+            case TORPEDO:
+                printf("torpilleur de 2 cases :\n> ");
+                lenShip = 2;
+                break;
+        }
+        cords = askCords();
+
+        do {
+            puts("Orientation possibles :");
+            puts("1 > HORIZONTALE");
+            puts("2 > VERTICALE\n");
+
+            printf("Indiquez l'orientation du bateau :\n> ");
+            scanf("%d", &ch_orientation);
+        } while(ch_orientation < 1 || ch_orientation > 2);
+
+        if(ch_orientation == 1) o = HORIZONTAL;
+        else o = VERTICAL;
+
+        s = initShip(lenShip, o, tabShip[ships_placed]);
+        res = addShip(p->grid, s, cords[0], cords[1]);
+        if(res == 1) {
+            ships_placed++;
+            puts("Bateau placé avec succès !\n");
+        } else puts("Vous ne pouvez pas placer le bateau ici !");
+    }
+
 }
 
 void manageShoot(Player p, Player op, int *tabCords) {
@@ -568,6 +639,7 @@ void manageShoot(Player p, Player op, int *tabCords) {
 
         if(user_shoot == 1) {
             tabCases = standardShoot(op->grid, tabCords[0], tabCords[1]);
+
         } else if(user_shoot == 2 && p->shoot[0]) {
             if(isAlive(p, SUBMARINE)) {
                 shoot_line_valid = 0;
@@ -591,7 +663,7 @@ void manageShoot(Player p, Player op, int *tabCords) {
                 printf("> Vous ne pouvez pas tirer car votre SOUS-MARIN a été détruit !\n");                    
             }
 
-        } else if(user_shoot == 3 &&  p->shoot[1]) {
+        } else if(user_shoot == 3 && p->shoot[1]) {
             if(isAlive(p, CRUISER)) {
                 tabCases = crossShoot(op->grid, tabCords[0], tabCords[1]);
                 p->shoot[1] = 0;
@@ -619,16 +691,42 @@ void manageShoot(Player p, Player op, int *tabCords) {
         }
 
         // Si le tableau est bien rempli, on s'arrête.
-        if(tabCases != NULL) shoot_valid = 1;
-        
+        if(tabCases != NULL) shoot_valid = 1; 
     }
 
     // On tir dans chaque cases du tableau de cases ciblées.
     shoot(tabCases);
+
     puts("-------------------------------------------");
     printf("Résumé de la partie précédente : \n> %s a effectué un tir en %c%d.\n", p->name, 'A' + tabCases[0]->y, tabCases[0]->x+1);
-    
+    free(tabCords);
     free(tabCases);
+}
+
+void startGame(Player p1, Player p2) {
+    /** Fonction qui prend en paramètre un joueur p1, et lance le jeu. */
+    
+    // On déclare quelques variables...
+    typeShip tabShip[5] = {CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO};
+    int ch = 0;
+
+    // On demande comment le joueur souhaite placer ses navires.
+    while(ch < 1 || ch > 2) {
+        puts("\nComment voulez-vous placer vos bateaux ?");
+        printf("1 > Manuellement\n2 > Aléatoirement\n> ");
+        scanf("%d", &ch);
+    }
+    // une fois le choix valide.
+    // Si c'est 1, il les ajoute manuellement.
+    if(ch == 1) {
+        printGrid(p1, p2);
+        placeShips(p1, tabShip, 5);
+    // Sinon il sont ajoutés de manière aléatoire.
+    } else {
+        fillGrid(p1, tabShip, 5);
+    }
+    // on rempli la grille de jeu de l'ORDI.
+    fillGrid(p2, tabShip, 5);
 }
 
 void roundPlayer(Player p1, Player p2) {
@@ -638,28 +736,13 @@ void roundPlayer(Player p1, Player p2) {
     
     printf("C'est au tour de %s !\n", p1->name);
 
-    int *tabCords = malloc(sizeof(int) * 2);
-    int cords_valid = 0, cord_x, cord_y, user_shoot; char letter, *cords;
-
-    while(!cords_valid) {
-
-        printf("\nA quelle case voulez-vous tirer ? (exemple : B2)\n> ");
-        scanf("%s", cords);
-
-        letter = cords[0];
-        cord_x = atoi(cords+1);
-        if(letter >= 'A' && letter <= 'J' && cord_x >= 1 && cord_x <= 10) {
-            tabCords[0] = cord_x - 1;
-            tabCords[1] = letter - 'A';
-            cords_valid = 1;
-        } else {
-            printf("'%s' n'est pas une case valide.\n", cords);
-        }
-    }
+    int *tabCords;
+    
+    printf("\nA quelle case voulez-vous tirer ? (exemple : B2)\n> ");
+    tabCords = askCords();
         
     // on demande puis effectue le tir aux coordonnées indiquées.
     manageShoot(p1, p2, tabCords);
-    free(tabCords);
 }
 
 void roundOrdi(Ordi ord, Player p1) {
@@ -711,7 +794,7 @@ void roundOrdi(Ordi ord, Player p1) {
         } else {
             ord->history[val_x][val_y] = 0;
         }
-        free(tabCases);
+
     } else if(ord->state == ORIENTATION) {
 
         val_x = ord->lastCase->x;
@@ -743,7 +826,6 @@ void roundOrdi(Ordi ord, Player p1) {
         if(valShoot == 1) {
             ord->history[val_x][val_y] = 1;
             ord->shootOriented = tmp;
-            ord->state = DESTRUCTION;
 
             int nbS_1 = p1->nbShip_alive;
             shipsDestroyed(p1);
@@ -753,6 +835,7 @@ void roundOrdi(Ordi ord, Player p1) {
                 ord->state = RESEARCH;
             } else {
                 ord->state = DESTRUCTION;
+                ord->lastCase = p1->grid->cases[val_x][val_y];
             }
         } else {
             ord->history[val_x][val_y] = 0;
@@ -840,15 +923,15 @@ void roundOrdi(Ordi ord, Player p1) {
         }
     }
 
-    
     printf("> %s a effectué un tir en %c%d.\n", ord->ordi->name, 'A' + val_y, val_x+1);
+    free(tabCases);
 }
 
 void playGame(Player p1, Ordi ord) {
     /** Prend en paramètre deux joueurs p1 et p2.
     La fonction va s'occuper du déroulement de la partie entre les deux joueurs. */
 
-    int *tabCords, end = 0;
+    int end = 0;
     Player p = p1;
     Ordi ia = ord;
 
@@ -872,39 +955,38 @@ void playGame(Player p1, Ordi ord) {
         }
     }
 }
-
-void cleanPlayer(Player p1){ 
-    int i,j; 
-    for ( i = 0; i < 10; i++)
-    {
-        for (j = 0; j < 10; j++)
-        {
-            free(p1->grid->cases[i][j]);
-        }
-        free(p1->grid->cases[i]);
-    }
-    free(p1->grid->cases);
-    for ( i = 0; i < p1->nbShip; i++) 
+void cleanPlayer(Player p1){  
+    int i,j;  
+    for ( i = 0; i < 10; i++) 
     { 
-        free(p1->tab_ship[i]->tabCase); 
-        free(p1->tab_ship[i]); 
+        for (j = 0; j < 10; j++) 
+        { 
+            free(p1->grid->cases[i][j]); 
+        } 
+        free(p1->grid->cases[i]); 
+    } 
+    free(p1->grid->cases); 
+    for(i = 0; i < p1->nbShip;i++) {
+        free(p1->tab_ship[i]->tabCase);
+        free(p1->tab_ship[i]);
     }
-    free(p1->shoot);
-    free(p1->tab_ship); 
-    free(p1->grid); 
-    free(p1); 
+    free(p1->shoot); 
+    free(p1->tab_ship);  
+    free(p1->grid);
+    free(p1);
+}  
+
+void cleanIA(Ordi o){ 
+    cleanPlayer(o->ordi); 
+    int i,j; 
+    for ( i = 0; i < 10; i++) 
+    { 
+        free(o->history[i]); 
+    } 
+    free(o->history); 
+    free(o); 
 } 
 
-void cleanIA(Ordi o){
-    cleanPlayer(o->ordi);
-    int i,j;
-    for ( i = 0; i < 10; i++)
-    {
-        free(o->history[i]);
-    }
-    free(o->history);
-    free(o);
-}
 /** Fonction main */
 void main() {
 
