@@ -265,6 +265,7 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
     
     Grid g = p->grid;
     Ship s;
+    Ship * tab_tmp = malloc(sizeof(Ship)* nbShips);
     int i = 0, val_x, val_y, lenShip;
 
     while(i < nbShips) {
@@ -285,15 +286,16 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
 
         if(s->oriented == VERTICAL && (val_x + s->length < p->grid->length)){
             if(addShip(g, s, val_x, val_y)) {
-                p->tab_ship[i++] = s;
+                tab_tmp[i++] = s;
             }
         }
         else if(s->oriented == HORIZONTAL && (val_y + s->length < p->grid->length)){
             if(addShip(g, s, val_x, val_y)) {
-                p->tab_ship[i++] = s;
+                tab_tmp[i++] = s;
             }
         } else free(s);
     }
+    p->tab_ship = tab_tmp;
 }
 
 void printGrid(Player p1, Player p2) {
@@ -969,9 +971,9 @@ void playGame(Player p1, Ordi ord) {
 }
 void cleanPlayer(Player p1){  
     int i,j;  
-    for ( i = 0; i < 10; i++) 
+    for ( i = 0; i < p1->grid->length; i++) 
     { 
-        for (j = 0; j < 10; j++) 
+        for (j = 0; j < p1->grid->length; j++) 
         { 
             free(p1->grid->cases[i][j]); 
         } 
