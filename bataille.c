@@ -2,114 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-// On déclare les énumérations.
-typedef enum {
-    /** On définit l'énumation du type d'une case.
-    Celle-ci peut être soit un case contenant un bateau (SHIP), soit de l'eau (WATER). */
-
-    SHIP, WATER
-} typeCase;
-
-typedef enum {
-    /** On définit l'énumation de l'état d'une case.
-    Celle-ci peut être soit un case qui a été touché (TOUCHED), soit non (NOT_TOUCHED). */
-
-    TOUCHED, NOT_TOUCHED
-} stateCase;
-
-typedef enum {
-    /** On définit l'énumation de l'orientation d'un bateau dans une grille.
-    Soit on s'oriente verticalement, soit horizontalement. */
-
-    VERTICAL, HORIZONTAL
-} OrientationShip;
-
-typedef enum {
-    /** On définit l'énumation de l'était du bauteau.
-    Soit toutes les cases du bateau ont été touchés, dans ce cas il est considéré comme détruit(DESTROYED), 
-    soit il reste des cases du bateau non touchées et il reste en vie (ALIVE). */
-
-    DESTROYED, ALIVE
-} stateShip;
-
-typedef enum {
-    /** On définit l'énumation de tous les type de bateau.
-    CARRIER = 5 cases (porte-avion), CRUISER = 4 cases (croiseur), 
-    DESTROYER = 3 cases (destroyer), SUBMARINE = 3 cases (sous-marin) et TORPEDO = 2 cases (torpilleur) */
-
-    CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO
-} typeShip;
-
-typedef enum {
-    /** On définit l'énumation de tous les états de L'ORDI.
-    RESEARCH : recherche de navire ennemi, ORIENTATION : détection de l'orientation à prendre
-    et DESTRUCTION : la destruction du navire.*/
-
-    RESEARCH, ORIENTATION, DESTRUCTION
-} stateOrdi;
-
-typedef enum {
-    /** On définit l'énumation de tous les type de bateau.
-    CARRIER = 5 cases (porte-avion), CRUISER = 4 cases (croiseur), 
-    DESTROYER = 3 cases (destroyer), SUBMARINE = 3 cases (sous-marin) et TORPEDO = 2 cases (torpilleur) */
-
-    TOP, LEFT, RIGHT, BOTTOM, UNDEFINED
-} OrientationShoot;
-
-// On déclare les structures.
-typedef struct _Case {
-    /** On définit la structure d'une case composé des ses positions (x, y), 
-    de son type de case (si il contient un bateau ou de l'eau) et de l'état de cette case
-    (si elle a été touché ou non). */
-
-    int x;
-    int y;
-    typeCase type;
-    stateCase state;
-} *Case;
-
-typedef struct _Grid {
-    Case **cases;
-    int length;
-} *Grid;
-
-typedef struct _Ship {
-    /** On définit la structure d'un bateau composé d'un tableau de case (contenant les cases qui compose ce bateau), 
-    de sa longueur, et de son orientation (verticale, ou horizontale). */
-
-    Case *tabCase;
-    int length;
-    OrientationShip oriented;
-    stateShip state;
-    typeShip type;
-} *Ship;
-
-typedef struct _Player {
-    /** On définit la structure d'un joueur composé de son nom, 
-    de son nombre de bateau, et ceux encore en vie, de son plateau de jeu,
-    ainsi que d'un tableau contenant ses bateaux. */
-
-    char *name;
-    int nbShip;
-    int nbShip_alive;
-    Grid grid;
-    Ship *tab_ship;
-    // Le nombre de tirs spéciaux restants.
-    int line, cross, plus, square;
-} *Player;
-
-typedef struct _Ordi {
-    /** On définit la structure d'une IA, qui est une extention d'un joueur,
-    mais qui possède également l'orientation de ses tirs, ses cases à ciblées
-    son état dans lequel il se trouve et l'historique de ses coups. */
-
-    Player ordi;
-    OrientationShoot shootOriented;
-    stateOrdi state;
-    Case lastCase;
-    int **history;
-} *Ordi;
+// On importe les énumérations & structures.
+#include "bataille.h"
 
 /** ----- Fonctions d'initialisation ----- */
 Grid initGrid(int lenGrid) {
@@ -143,7 +37,8 @@ Player initPlayer(char *name, int lenGrid) {
     p->grid = initGrid(lenGrid);
 
     // On initialise le nombre de tirs spéciaux à 1 chacun.
-    p->line = 1,p->cross = p->plus = p->square = 1;
+    p->shoot = malloc(sizeof(int)*4);
+    for (int i = 0;i <4;i++) p->shoot[i] = 1;
     return p;
 }
 
@@ -153,7 +48,7 @@ Ordi initOrdi(int lenGrid) {
     et une matrice contenant l'historique de ces cases déjà tirées. */
 
     Ordi o = malloc(sizeof(Ordi));
-    char *n = malloc(sizeof(char) * 2);n = "IA";
+    char *n = "IA";
     o->ordi = initPlayer(n, lenGrid);
     o->state = RESEARCH;
     o->shootOriented = UNDEFINED;
@@ -194,6 +89,9 @@ int addShip(Grid g, Ship s, int x, int y) {
 
     // si les coordonnées indiqués ne sont pas dans la grille, on ne fait rien.
     if(x < 0 || x > g->length || y < 0 || y > g->length) {
+        free(s->tabCase);
+        free(tab_tmp);
+        free(s);
         return 0;
     }
 
@@ -241,6 +139,10 @@ int addShip(Grid g, Ship s, int x, int y) {
     // Sinon, cela veut dire qu'on à rencontré une erreur, et on n'ajoute pas le bateau.
     } else {
     // on retourne 0 pour dire que le bateau n'à pas été ajouté.
+    
+        free(s->tabCase);
+        free(s);
+        free(tab_tmp);
         return 0;
     }
 
@@ -256,7 +158,8 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
     ainsi que leurs nombres, et va remplir aléatoirement sa grille de jeu de nbShips bateaux. */
     
     Grid g = p->grid;
-    Ship s, *tmp = malloc(sizeof(Ship) * nbShips);
+    Ship s;
+    Ship * tab_tmp = malloc(sizeof(Ship)* nbShips);
     int i = 0, val_x, val_y, lenShip;
 
     while(i < nbShips) {
@@ -277,17 +180,16 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
 
         if(s->oriented == VERTICAL && (val_x + s->length < p->grid->length)){
             if(addShip(g, s, val_x, val_y)) {
-                tmp[i++] = s;
+                tab_tmp[i++] = s;
             }
         }
-        if(s->oriented == HORIZONTAL && (val_y + s->length < p->grid->length)){
+        else if(s->oriented == HORIZONTAL && (val_y + s->length < p->grid->length)){
             if(addShip(g, s, val_x, val_y)) {
-                
-                tmp[i++] = s;
+                tab_tmp[i++] = s;
             }
-        }
+        } else free(s);
     }
-    p->tab_ship = tmp;
+    p->tab_ship = tab_tmp;
 }
 
 void printGrid(Player p1, Player p2) {
@@ -352,7 +254,6 @@ void printGrid(Player p1, Player p2) {
         } printf("-\n");
     }
 }
-
 int isDestroyed(Ship s) {
     /** Fonction qui prend en paramètre un bateau, 
     et va regarder si ce bateau est détruit. Si toutes ces cases ont été touchées, on actualise son statut,
@@ -527,7 +428,6 @@ void initGame(Player *p1, Ordi *ord) {
         printf("Indiquez la taille de la grille des joueurs (comprise entre 8 et 15) :\n> ");
         scanf("%d", &sizeGrid);
     }
-
     printf("Indiquez le nom du joueur n°1 :\n> ");
     scanf("%s", name);
     
@@ -614,7 +514,6 @@ void placeShips(Player p, typeShip *tabShip, int nbShips) {
             ships_placed++;
             puts("Bateau placé avec succès !\n");
         } else puts("Vous ne pouvez pas placer le bateau ici !");
-        free(s);
     }
 
 }
@@ -644,7 +543,7 @@ void manageShoot(Player p, Player op, int *tabCords) {
         if(user_shoot == 1) {
             tabCases = standardShoot(op->grid, tabCords[0], tabCords[1]);
 
-        } else if(user_shoot == 2 && p->line) {
+        } else if(user_shoot == 2 && p->shoot[0]) {
             if(isAlive(p, SUBMARINE)) {
                 shoot_line_valid = 0;
                 while(!shoot_line_valid) {
@@ -658,35 +557,35 @@ void manageShoot(Player p, Player op, int *tabCords) {
                     if(line_shoot[0] == 'C') {
                         tabCases = lineShootV(op->grid, tabCords[1]);
                     } else if(line_shoot[0] == 'L') {
-                        tabCases = lineShootH(op->grid, tabCords[1]);
+                        tabCases = lineShootH(op->grid, tabCords[0]);
                     }
                     shoot_line_valid = 1;
                 }
-                p->line = 0;
+                p->shoot[0] = 0;
             } else {
                 printf("> Vous ne pouvez pas tirer car votre SOUS-MARIN a été détruit !\n");                    
             }
 
-        } else if(user_shoot == 3 && p->cross) {
+        } else if(user_shoot == 3 && p->shoot[1]) {
             if(isAlive(p, CRUISER)) {
                 tabCases = crossShoot(op->grid, tabCords[0], tabCords[1]);
-                p->cross = 0;
+                p->shoot[1] = 0;
             } else {
                 printf("> Vous ne pouvez pas tirer car votre CROISEUR a été détruit !\n");                    
             }
 
-        } else if(user_shoot == 4 && p->plus) {
+        } else if(user_shoot == 4 && p->shoot[2]) {
             if(isAlive(p, CRUISER)) {
                 tabCases = plusShoot(op->grid, tabCords[0], tabCords[1]);
-                p->plus = 0;
+                p->shoot[2] = 0;
             } else {
                 printf("> Vous ne pouvez pas tirer car votre CROISEUR a été détruit !\n");                    
             }
 
-        } else if(user_shoot == 5 && p->square) {
+        } else if(user_shoot == 5 && p->shoot[3]) {
             if(isAlive(p, CARRIER)) {
                 tabCases = squareShoot(op->grid, tabCords[0], tabCords[1]);
-                p->square = 0;
+                p->shoot[3] = 0;
             } else {
                 printf("> Vous ne pouvez pas tirer car votre PORTE-AVION a été détruit !\n");                    
             }
@@ -703,6 +602,8 @@ void manageShoot(Player p, Player op, int *tabCords) {
 
     puts("-------------------------------------------");
     printf("Résumé de la partie précédente : \n> %s a effectué un tir en %c%d.\n", p->name, 'A' + tabCases[0]->y, tabCases[0]->x+1);
+    free(tabCords);
+    free(tabCases);
 }
 
 void startGame(Player p1, Player p2) {
@@ -738,7 +639,7 @@ void roundPlayer(Player p1, Player p2) {
     
     printf("C'est au tour de %s !\n", p1->name);
 
-    int *tabCords = malloc(sizeof(int) * 2);
+    int *tabCords;
     
     printf("\nA quelle case voulez-vous tirer ? (exemple : B2)\n> ");
     tabCords = askCords();
@@ -748,30 +649,40 @@ void roundPlayer(Player p1, Player p2) {
 }
 
 void roundOrdi(Ordi ord, Player p1) {
+    /** Prend en paramètre un ordi de type IA et un joueur.
+    La fonction va gérer le tour d'un ordi et effectuer un tir selon son état. */
     
+    // on déclare quelques variables...
     int val_x, val_y;
     int valShoot, found = 0, chx, i;
-    Case *tabCases;
+    Case *tabCases; OrientationShoot tmp;
 
+    // si l'IA est en état de recherche d'un bateau.
     if(ord->state == RESEARCH) {
 
+        // si on on déjà effectué un tir.
         if(ord->lastCase != NULL) {
 
             found = 0;chx = 0;
+            // on cherche une case autour de la précédente à une distance de : case + 2.
             while(!found && chx < 4) {
-
+                // on sauvegarde les coordonées de tir,
+                // si il n'a pas déjà tirer à la case y+2 vers le bas.
                 if(ord->lastCase->y+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y+2] == -1) {
                     val_x = ord->lastCase->x;
                     val_y = ord->lastCase->y+2;
                     found = 1;
+                // si il n'a pas déjà tirer à la case y+2 vers le haut.
                 } else if(ord->lastCase->y-2 >= ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y-2] == -1) {
                     val_x = ord->lastCase->x;
                     val_y = ord->lastCase->y-2;
                     found = 1;
+                // si il n'a pas déjà tirer à la case x+2 vers la droite.
                 } else if(ord->lastCase->x+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->x+2] == -1) {
                     val_x = ord->lastCase->x+2;
                     val_y = ord->lastCase->y;
                     found = 1;
+                // si il n'a pas déjà tirer à la case x-2 vers la gauche.
                 } else if(ord->lastCase->x-2 >= ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->x-2] == -1) {
                     val_x = ord->lastCase->x-2;
                     val_y = ord->lastCase->y;
@@ -780,21 +691,11 @@ void roundOrdi(Ordi ord, Player p1) {
             }
         }
 
+        // si il n'a pas trouvé de case où tirer ou si c'est sa première action durant la partie.
+        // on effectue un tir à une coordonées aléatoire.
         if(!found || ord->lastCase == NULL) {
             val_x = rand() % ord->ordi->grid->length;
             val_y = rand() % ord->ordi->grid->length;
-        }
-
-        ord->lastCase = p1->grid->cases[val_x][val_y];
-
-        tabCases = standardShoot(p1->grid, ord->lastCase->x, ord->lastCase->y);
-
-        valShoot = shoot(tabCases);
-        if(valShoot == 1) {
-            ord->history[val_x][val_y] = 1;
-            ord->state = ORIENTATION;
-        } else {
-            ord->history[val_x][val_y] = 0;
         }
 
     } else if(ord->state == ORIENTATION) {
@@ -802,7 +703,7 @@ void roundOrdi(Ordi ord, Player p1) {
         val_x = ord->lastCase->x;
         val_y = ord->lastCase->y;
 
-        OrientationShoot tmp = UNDEFINED;
+        tmp = UNDEFINED;
 
         if(val_x-1 >= 0 && ord->history[val_x-1][val_y] == -1) {
             val_x -= 1;
@@ -821,12 +722,90 @@ void roundOrdi(Ordi ord, Player p1) {
             val_x = rand() % ord->ordi->grid->length;
             val_y = rand() % ord->ordi->grid->length;
         }
+        
+    } else if(ord->state == DESTRUCTION) {
 
-        tabCases = standardShoot(p1->grid, val_x, val_y);
-        valShoot = shoot(tabCases);
+        found = 0;
+        // on prends en coordonées la case précédente.
+        val_x = ord->lastCase->x;
+        val_y = ord->lastCase->y;        
 
-        if(valShoot == 1) {
-            ord->history[val_x][val_y] = 1;
+        // tant qu'on a pas trouvé une case non touchée on cherche.
+        while(!found) {
+
+            found = 0;
+            // si on l'orientation est vers le haut.
+            if(ord->shootOriented == TOP) {
+                //si la case suivante n'a pas encore été touche, on la prends
+                if(ord->history[val_x-1][val_y] = -1 && val_x - 1 >= 0) {
+                    val_x = val_x-1;
+                    found = 1;
+                // si la case suivante à déjà été tirée et que c'est un bateau,
+                // on la garde en mémoire
+                } else if(ord->history[val_x-1][val_y] == 1 && val_x - 1 >= 0) {
+                    val_x = val_x-1;
+                // si c'est de l'eau, on va dans l'autre sens.
+                } else {
+                    ord->shootOriented = BOTTOM;
+                }
+            // si on l'orientation est vers le bas.
+            } else if(ord->shootOriented == BOTTOM) {
+                //si la case suivante n'a pas encore été touche, on la prends
+                if(ord->history[val_x+1][val_y] = -1 && val_x + 1 < ord->ordi->grid->length) {
+                    val_x = val_x+1;
+                    found = 1;
+                // si la case suivante à déjà été tirée et que c'est un bateau,
+                // on la garde en mémoire
+                } else if(ord->history[val_x+1][val_y] == 1 && val_x + 1 < ord->ordi->grid->length) {
+                    val_x = val_x+1;
+                } else {
+                    // si c'est de l'eau, on va dans l'autre sens.
+                    ord->shootOriented = TOP;
+                }
+            // si on l'orientation est vers la gauche.
+            } else if(ord->shootOriented == LEFT) {
+                //si la case suivante n'a pas encore été touche, on la prends
+                if(ord->history[val_x][val_y-1] = -1  && val_y - 1 >= 0) {
+                    val_y = val_y-1;
+                    found = 1;
+                // si la case suivante à déjà été tirée et que c'est un bateau,
+                // on la garde en mémoire
+                } else if(ord->history[val_x][val_y-1] == 1  && val_y - 1 >= 0) {
+                    val_y = val_y-1;
+                } else {
+                    // si c'est de l'eau, on va dans l'autre sens.
+                    ord->shootOriented = RIGHT;
+                }
+
+            // si on l'orientation est vers la droite.
+            } else if(ord->shootOriented == RIGHT) {
+                //si la case suivante n'a pas encore été touche, on la prends
+                if(ord->history[val_x][val_y+1] = -1 && val_y + 1 < ord->ordi->grid->length) {
+                    val_y = val_y+1;
+                    found = 1;
+                // si la case suivante à déjà été tirée et que c'est un bateau,
+                // on la garde en mémoire
+                } else if(ord->history[val_x][val_y+1] == 1 && val_y + 1 < ord->ordi->grid->length) {
+                    val_y = val_y+1;
+                } else {
+                    // si c'est de l'eau, on va dans l'autre sens.
+                    ord->shootOriented = LEFT;
+                }
+            }
+        }
+    }
+
+    tabCases = standardShoot(p1->grid, val_x, val_y);
+    valShoot = shoot(tabCases);
+
+    if(valShoot == 1) {
+        ord->history[val_x][val_y] = 1;
+        ord->lastCase = p1->grid->cases[val_x][val_y];
+        if(ord->state == RESEARCH) {
+        
+            ord->state = ORIENTATION;
+
+        } else if(ord->state == ORIENTATION) {
             ord->shootOriented = tmp;
 
             int nbS_1 = p1->nbShip_alive;
@@ -837,73 +816,9 @@ void roundOrdi(Ordi ord, Player p1) {
                 ord->state = RESEARCH;
             } else {
                 ord->state = DESTRUCTION;
-                ord->lastCase = p1->grid->cases[val_x][val_y];
             }
-        } else {
-            ord->history[val_x][val_y] = 0;
-        }
-    } else if(ord->state == DESTRUCTION) {
-        // on détruit les bateaux
-        found = 0;
-        val_x = ord->lastCase->x;
-        val_y = ord->lastCase->y;
+        } else if(ord->state == DESTRUCTION) {
 
-        while(!found) {
-            if(ord->shootOriented == TOP) {
-                if(ord->history[val_x-1][val_y] = -1) {
-                    val_x = ord->lastCase->x-1;
-                    found = 1;
-                } else if(ord->history[val_x-1][val_y] == 2) {
-                    val_x = ord->lastCase->x-1;
-                }
-                else {
-                    ord->shootOriented = BOTTOM;
-                }
-            }
-
-            if(ord->shootOriented == BOTTOM) {
-                if(ord->history[val_x+1][val_y] = -1) {
-                    val_x = ord->lastCase->x+1;
-                    found = 1;
-                } else if(ord->history[val_x+1][val_y] == 2) {
-                    val_x = ord->lastCase->x+1;
-                }
-                else {
-                    ord->shootOriented = TOP;
-                }
-            }
-
-            if(ord->shootOriented == LEFT) {
-                if(ord->history[val_x][val_y-1] = -1) {
-                    val_y = ord->lastCase->y-1;
-                    found = 1;
-                } else if(ord->history[val_x][val_y-1] == 2) {
-                    val_y = ord->lastCase->y-1;
-                }
-                else {
-                    ord->shootOriented = RIGHT;
-                }
-            }
-
-            if(ord->shootOriented == RIGHT) {
-                if(ord->history[val_x][val_y+1] = -1) {
-                    val_y = ord->lastCase->y+1;
-                    found = 1;
-                } else if(ord->history[val_x][val_y+1] == 2) {
-                    val_y = ord->lastCase->y+1;
-                }
-                else {
-                    ord->shootOriented = LEFT;
-                }
-            }
-        }
-
-        tabCases = standardShoot(p1->grid, val_x, val_y);
-        valShoot = shoot(tabCases);
-
-        if(valShoot == 1) {
-            ord->history[val_x][val_y] = 1;
-            ord->lastCase = p1->grid->cases[val_x][val_y];
             int nbS_1 = p1->nbShip_alive;
             shipsDestroyed(p1);
             int nbS_2 = p1->nbShip_alive;
@@ -911,28 +826,29 @@ void roundOrdi(Ordi ord, Player p1) {
             if(nbS_1 != nbS_2) {
                 ord->state = RESEARCH;
                 ord->lastCase = NULL;
-                puts("\non recommence a zero\n");
             }
-
-
-        } else {
-            ord->history[val_x][val_y] = 0;
-
+        }
+    } else {
+        ord->history[val_x][val_y] = 0;
+        if(ord->state == RESEARCH) {
+            ord->lastCase = p1->grid->cases[val_x][val_y];
+        } else if(ord->state == DESTRUCTION) {
             if(ord->shootOriented == TOP) ord->shootOriented = BOTTOM;
-            if(ord->shootOriented == BOTTOM) ord->shootOriented = TOP;
-            if(ord->shootOriented == LEFT) ord->shootOriented = RIGHT;
-            if(ord->shootOriented == RIGHT) ord->shootOriented = LEFT;
+            else if(ord->shootOriented == BOTTOM) ord->shootOriented = TOP;
+            else if(ord->shootOriented == LEFT) ord->shootOriented = RIGHT;
+            else if(ord->shootOriented == RIGHT) ord->shootOriented = LEFT;
         }
     }
 
     printf("> %s a effectué un tir en %c%d.\n", ord->ordi->name, 'A' + val_y, val_x+1);
+    free(tabCases);
 }
 
 void playGame(Player p1, Ordi ord) {
     /** Prend en paramètre deux joueurs p1 et p2.
     La fonction va s'occuper du déroulement de la partie entre les deux joueurs. */
 
-    int *tabCords, end = 0;
+    int end = 0;
     Player p = p1;
     Ordi ia = ord;
 
@@ -948,7 +864,7 @@ void playGame(Player p1, Ordi ord) {
 
         // on vérifie si les bateaux adverses ne sont pas tous détruit.
         if(shipsDestroyed(ia->ordi)) {
-            // Si c'est le cas, le jeu s'arrête.
+            // Si c'est le cas, le jeu s'arrête, sinon on continue.
             puts("Partie terminé ! Vous avez détruit l'ensemble des navires ennemis.");
             end = 1;
         } else {
@@ -962,6 +878,35 @@ void playGame(Player p1, Ordi ord) {
     }
 }
 
+void cleanPlayer(Player p1){  
+    int i,j;  
+    for ( i = 0; i < p1->grid->length; i++) { 
+        for (j = 0; j < p1->grid->length; j++) { 
+            free(p1->grid->cases[i][j]); 
+        } 
+        free(p1->grid->cases[i]); 
+    } 
+    free(p1->grid->cases); 
+    for(i = 0; i < p1->nbShip;i++) {
+        free(p1->tab_ship[i]->tabCase);
+        free(p1->tab_ship[i]);
+    }
+    free(p1->shoot); 
+    free(p1->tab_ship);  
+    free(p1->grid);
+    free(p1);
+}  
+
+void cleanIA(Ordi o){ 
+    cleanPlayer(o->ordi); 
+    int i,j; 
+    for ( i = 0; i < 10; i++) { 
+        free(o->history[i]); 
+    } 
+    free(o->history); 
+    free(o); 
+} 
+
 /** Fonction main */
 void main() {
 
@@ -969,6 +914,14 @@ void main() {
     Player p1; Ordi ord;
     initGame(&p1, &ord);
 
+    // on demande des précisions au joueur avant de démarrer la partie.
     startGame(p1, ord->ordi);
+
+    // on lance la partie
     playGame(p1, ord);
+
+    // on vide la mémoire.
+    free(p1->name);
+    cleanPlayer(p1);
+    cleanIA(ord);
 }
