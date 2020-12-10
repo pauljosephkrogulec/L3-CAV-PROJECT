@@ -265,7 +265,7 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
     
     Grid g = p->grid;
     Ship s;
-    Ship * tab_tmp = malloc(sizeof(Ship)* nbShips);
+    Ship * tab_tmp = p->tab_ship;
     int i = 0, val_x, val_y, lenShip;
 
     while(i < nbShips) {
@@ -967,6 +967,7 @@ void playGame(Player p1, Ordi ord) {
                 end = 1;
             }
         }
+        end = 1;
     }
 }
 void cleanPlayer(Player p1){  
