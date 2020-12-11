@@ -138,13 +138,11 @@ int addShip(Grid g, Ship s, int x, int y) {
     // Sinon, cela veut dire qu'on à rencontré une erreur, et on n'ajoute pas le bateau.
     } else {
     // on retourne 0 pour dire que le bateau n'à pas été ajouté.
-    
         free(s->tabCase);
         free(s);
         free(tab_tmp);
         return 0;
     }
-
     // on libére l'espace mémoire stocké par le tableau de case temporaire.
     free(tab_tmp);
 
@@ -624,7 +622,7 @@ void startGame(Player p1, Player p2) {
     
     // On déclare quelques variables...
     typeShip tabShip[5] = {CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO};
-    int ch = 0, c;
+    int ch = 0, c, stop = 0;
 
     // On demande comment le joueur souhaite placer ses navires.
     while(ch < 1 || ch > 2) {
@@ -668,76 +666,75 @@ void roundOrdi(Ordi ord, Player p1) {
     La fonction va gérer le tour d'un ordi et effectuer un tir selon son état. */
     
     // on déclare quelques variables...
-    int val_x, val_y;
-    int valShoot, found = 0, chx, i;
+    int val_x, val_y, valShoot, found = 0, chx, i,nbS_1, nbS_2;
     OrientationShoot tmp;
 
     // si l'IA est en état de recherche d'un bateau.
     if(ord->state == RESEARCH) {
-
         // si on on déjà effectué un tir.
         if(ord->lastCase != NULL) {
+            // on sauvegarde les coordonées de tir,
+            val_x = ord->lastCase->x;
+            val_y = ord->lastCase->y;
 
-            found = 0;chx = 0;
-            // on cherche une case autour de la précédente à une distance de : case + 2.
-            while(!found && chx < 4) {
-                // on sauvegarde les coordonées de tir,
-                // si il n'a pas déjà tirer à la case y+2 vers le bas.
-                if(ord->lastCase->y+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y+2] == -1) {
-                    val_x = ord->lastCase->x;
-                    val_y = ord->lastCase->y+2;
-                    found = 1;
-                // si il n'a pas déjà tirer à la case y+2 vers le haut.
-                } else if(ord->lastCase->y-2 >= ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y-2] == -1) {
-                    val_x = ord->lastCase->x;
-                    val_y = ord->lastCase->y-2;
-                    found = 1;
-                // si il n'a pas déjà tirer à la case x+2 vers la droite.
-                } else if(ord->lastCase->x+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->x+2] == -1) {
-                    val_x = ord->lastCase->x+2;
-                    val_y = ord->lastCase->y;
-                    found = 1;
-                // si il n'a pas déjà tirer à la case x-2 vers la gauche.
-                } else if(ord->lastCase->x-2 >= ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->x-2] == -1) {
-                    val_x = ord->lastCase->x-2;
-                    val_y = ord->lastCase->y;
-                    found = 1;
-                } chx++;
+            // si il n'a pas déjà tirer à la case y+2 vers le bas.
+            if(ord->lastCase->y+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y+2] == -1) {
+                val_y += 2;
+            // si il n'a pas déjà tirer à la case y+2 vers le haut.
+            } else if(ord->lastCase->y-2 >= ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y-2] == -1) {
+                val_y -= 2;
+            // si il n'a pas déjà tirer à la case x+2 vers la droite.
+            } else if(ord->lastCase->x+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x+2][ord->lastCase->x] == -1) {
+                val_x += 2;
+            // si il n'a pas déjà tirer à la case x-2 vers la gauche.
+            } else if(ord->lastCase->x-2 >= ord->ordi->grid->length && ord->history[ord->lastCase->x-2][ord->lastCase->x] == -1) {
+                val_x -= 2;
+            // Si on ne peut tirer aux positions voulues, on prend une case aléatoire.
+            } else {
+                val_x = rand() % ord->ordi->grid->length;
+                val_y = rand() % ord->ordi->grid->length;
             }
-        }
-
-        // si il n'a pas trouvé de case où tirer ou si c'est sa première action durant la partie.
-        // on effectue un tir à une coordonées aléatoire.
-        if(!found || ord->lastCase == NULL) {
+        // sinon, on effectue le premier tir de manière aléatoire.
+        } else {
             val_x = rand() % ord->ordi->grid->length;
             val_y = rand() % ord->ordi->grid->length;
         }
-
+    // si l'IA est en état de détection d'orientation.
     } else if(ord->state == ORIENTATION) {
 
+        // on sauvegarde les coordonées de tir,
         val_x = ord->lastCase->x;
         val_y = ord->lastCase->y;
-
+        // on défini l'orientation du tir en UNDEFINED.
         tmp = UNDEFINED;
 
+        // on vérifie si la case au dessus n'a pas encore été tiré.
         if(val_x-1 >= 0 && ord->history[val_x-1][val_y] == -1) {
+            // si c'est le cas, on sauvegarde la coordonée et l'orientation en haut.
             val_x -= 1;
             tmp = TOP;
+        // on vérifie si la case au dessus n'a pas encore été tiré.
         } else if(val_x+1 < ord->ordi->grid->length && ord->history[val_x+1][val_y] == -1) {
+            // si c'est le cas, on sauvegarde la coordonée et l'orientation en bas.
             val_x += 1;
             tmp = BOTTOM;
+        // on vérifie si la case au dessus n'a pas encore été tiré.
         } else if(val_y-1 >= 0 && ord->history[val_x][val_y-1] == -1) {
+            // si c'est le cas, on sauvegarde la coordonée et l'orientation à gauche.
             val_y -= 1;
             tmp = LEFT;
+        // on vérifie si la case au dessus n'a pas encore été tiré.
         } else if(val_y+1 < ord->ordi->grid->length && ord->history[val_x][val_y+1] == -1) {
+            // si c'est le cas, on sauvegarde la coordonée et l'orientation à droite.
             val_y += 1;
             tmp = RIGHT;
+        // si toutes les cases on été tirés, on effectue 
         } else {
             ord->state = RESEARCH;
             val_x = rand() % ord->ordi->grid->length;
             val_y = rand() % ord->ordi->grid->length;
         }
-        
+    // si l'IA est en état de destruction du navire.
     } else if(ord->state == DESTRUCTION) {
 
         found = 0;
@@ -810,25 +807,30 @@ void roundOrdi(Ordi ord, Player p1) {
         }
     }
 
-
-    int randShoot = rand() % 10;
-
-    
+    // on effectue le tir, et on sauvegarde le résultat du tir (si on tir sur un bateau ou de l'eau).
     valShoot = shoot(p1->grid, val_x, val_y, &standardShoot);
 
+    // Si on tire sur un bateau..
     if(valShoot == 1) {
-        ord->history[val_x][val_y] = 1;
-        ord->lastCase = p1->grid->cases[val_x][val_y];
-        if(ord->state == RESEARCH) {
-        
-            ord->state = ORIENTATION;
 
+        // on actualise l'historique.
+        ord->history[val_x][val_y] = 1;
+        // on sauevarde la case.
+        ord->lastCase = p1->grid->cases[val_x][val_y];
+
+        // si on est en état de recherche
+        if(ord->state == RESEARCH) {
+
+            // on passe à un état d'orientation.        
+            ord->state = ORIENTATION;
+        
+        // si on est en état d'orientation.
         } else if(ord->state == ORIENTATION) {
             ord->shootOriented = tmp;
 
-            int nbS_1 = p1->nbShip_alive;
+            nbS_1 = p1->nbShip_alive;
             shipsDestroyed(p1);
-            int nbS_2 = p1->nbShip_alive;
+            nbS_2 = p1->nbShip_alive;
 
             if(nbS_1 != nbS_2) {
                 ord->state = RESEARCH;
@@ -837,20 +839,28 @@ void roundOrdi(Ordi ord, Player p1) {
             }
         } else if(ord->state == DESTRUCTION) {
 
-            int nbS_1 = p1->nbShip_alive;
+            nbS_1 = p1->nbShip_alive;
             shipsDestroyed(p1);
-            int nbS_2 = p1->nbShip_alive;
+            nbS_2 = p1->nbShip_alive;
 
             if(nbS_1 != nbS_2) {
                 ord->state = RESEARCH;
                 ord->lastCase = NULL;
             }
         }
+    // Si il tire dans l'eau..
     } else {
+        // On actualise la case dans l'historique.
         ord->history[val_x][val_y] = 0;
+
+        // Si on est en état de recherche, on sauvegarde la case tiré.
         if(ord->state == RESEARCH) {
             ord->lastCase = p1->grid->cases[val_x][val_y];
+
+        // Si on est en état de destruction & que le bateau n'est pas encore détruit.
         } else if(ord->state == DESTRUCTION) {
+
+            // On va à la direction opposé pour continuer la destruction du bateau.
             if(ord->shootOriented == TOP) ord->shootOriented = BOTTOM;
             else if(ord->shootOriented == BOTTOM) ord->shootOriented = TOP;
             else if(ord->shootOriented == LEFT) ord->shootOriented = RIGHT;
@@ -871,7 +881,6 @@ void playGame(Player p1, Ordi ord) {
 
     // Le jeu continue tant que les deux joueurs ont encore au moins un bateau en vie.
     while(!end) {
-
         // En fonction du point de vu du joueur à qui c'est le tour...
         // on lui affiche la grille (de son point de vue)
         printGrid(p, ia->ordi);
@@ -896,9 +905,9 @@ void playGame(Player p1, Ordi ord) {
     }
 }
 
-void cleanPlayer(Player p1){  
+void cleanPlayer(Player p1) {  
     int i,j;  
-    for ( i = 0; i < p1->grid->length; i++) { 
+    for (i = 0; i < p1->grid->length; i++) { 
         for (j = 0; j < p1->grid->length; j++) { 
             free(p1->grid->cases[i][j]); 
         } 
@@ -915,7 +924,7 @@ void cleanPlayer(Player p1){
     free(p1);
 }  
 
-void cleanIA(Ordi o){ 
+void cleanIA(Ordi o) { 
     cleanPlayer(o->ordi); 
     int i; 
     for ( i = 0; i < 10; i++) { 
