@@ -310,7 +310,7 @@ Case *standardShoot(Grid g, int x, int y) {
     return caseCible;
 }
 
-Case *lineShootH(Grid g, int x) {
+Case *lineShootH(Grid g, int x, int y) {
     /** Prend en paramètre une grille de jeu, et un ligne x de cette grille.
     La fonction concerne un tir sur l'ensemble des cases de la ligne horizontale (x) donnée en paramètre. */
 
@@ -324,7 +324,7 @@ Case *lineShootH(Grid g, int x) {
     return caseCible;
 }
 
-Case *lineShootV(Grid g, int y) {
+Case *lineShootV(Grid g, int x, int y) {
     /** Prend en paramètre une grille de jeu, et un ligne y de cette grille.
     La fonction concerne un tir sur l'ensemble des cases de la ligne verticale (y) donnée en paramètre. */
 
@@ -395,11 +395,13 @@ Case *squareShoot(Grid g, int x, int y) {
     return caseCible;
 }
 
-int shoot(Case *caseCible) {
+int shoot(Grid g, int x, int y, Case * (*pShoot) (Grid, int, int)) {
     /** Fonction qui prend en paramètre un tableau de case ciblées,
      et va tirer dans chacunes des cases du tableau. Si on a tiré dans un bateau on retourne 1, sinon 0. */
 
     int sCase = 0;
+    Case *caseCible = (*pShoot) (g, x, y);
+
     for(int i = 0; caseCible[i];i++) {
 
         if(caseCible[i]->type == SHIP) sCase = 1;
@@ -522,7 +524,6 @@ void manageShoot(Player p, Player op, int *tabCords) {
     La fonction va demander au joueur le tir de son choix, et va effectuer ce tir si les conditions sont bien respectés. 
     (si le tir spécial n'a pas déjà été utilisé et que le bateau associé n'est pas détruit) */
 
-    Case *tabCases = NULL;
     int user_shoot = 0, shoot_valid = 0, shoot_line_valid = 0;
     char line_shoot[1];
 
@@ -540,7 +541,8 @@ void manageShoot(Player p, Player op, int *tabCords) {
         }
 
         if(user_shoot == 1) {
-            tabCases = standardShoot(op->grid, tabCords[0], tabCords[1]);
+            shoot(op->grid, tabCords[0], tabCords[1], &standardShoot);
+            shoot_valid = 1;
 
         } else if(user_shoot == 2 && p->shoot[0]) {
             if(isAlive(p, SUBMARINE)) {
@@ -554,12 +556,13 @@ void manageShoot(Player p, Player op, int *tabCords) {
                     scanf("%s", line_shoot);
 
                     if(line_shoot[0] == 'C') {
-                        tabCases = lineShootV(op->grid, tabCords[1]);
+                        shoot(op->grid, tabCords[0], tabCords[1], &lineShootV);
                     } else if(line_shoot[0] == 'L') {
-                        tabCases = lineShootH(op->grid, tabCords[0]);
+                        shoot(op->grid, tabCords[0], tabCords[1], &lineShootH);
                     }
                     shoot_line_valid = 1;
                 }
+                shoot_valid = 1;
                 p->shoot[0] = 0;
             } else {
                 printf("> Vous ne pouvez pas tirer car votre SOUS-MARIN a été détruit !\n");                    
@@ -567,7 +570,8 @@ void manageShoot(Player p, Player op, int *tabCords) {
 
         } else if(user_shoot == 3 && p->shoot[1]) {
             if(isAlive(p, CRUISER)) {
-                tabCases = crossShoot(op->grid, tabCords[0], tabCords[1]);
+                shoot(op->grid, tabCords[0], tabCords[1], &crossShoot);
+                shoot_valid = 1;
                 p->shoot[1] = 0;
             } else {
                 printf("> Vous ne pouvez pas tirer car votre CROISEUR a été détruit !\n");                    
@@ -575,7 +579,8 @@ void manageShoot(Player p, Player op, int *tabCords) {
 
         } else if(user_shoot == 4 && p->shoot[2]) {
             if(isAlive(p, CRUISER)) {
-                tabCases = plusShoot(op->grid, tabCords[0], tabCords[1]);
+                shoot(op->grid, tabCords[0], tabCords[1], &plusShoot);
+                shoot_valid = 1;
                 p->shoot[2] = 0;
             } else {
                 printf("> Vous ne pouvez pas tirer car votre CROISEUR a été détruit !\n");                    
@@ -583,7 +588,8 @@ void manageShoot(Player p, Player op, int *tabCords) {
 
         } else if(user_shoot == 5 && p->shoot[3]) {
             if(isAlive(p, CARRIER)) {
-                tabCases = squareShoot(op->grid, tabCords[0], tabCords[1]);
+                shoot(op->grid, tabCords[0], tabCords[1], &squareShoot);
+                shoot_valid = 1;
                 p->shoot[3] = 0;
             } else {
                 printf("> Vous ne pouvez pas tirer car votre PORTE-AVION a été détruit !\n");                    
@@ -591,18 +597,11 @@ void manageShoot(Player p, Player op, int *tabCords) {
         } else {
             puts("> Vous avez déjà effectué ce tir !\n");
         }
-
-        // Si le tableau est bien rempli, on s'arrête.
-        if(tabCases != NULL) shoot_valid = 1; 
     }
 
-    // On tir dans chaque cases du tableau de cases ciblées.
-    shoot(tabCases);
-
     puts("-------------------------------------------");
-    printf("Résumé de la partie précédente : \n> %s a effectué un tir en %c%d.\n", p->name, 'A' + tabCases[0]->y, tabCases[0]->x+1);
+    printf("Résumé de la partie précédente : \n> %s a effectué un tir en %c%d.\n", p->name, 'A' + tabCords[0], tabCords[0]+1);
     free(tabCords);
-    free(tabCases);
 }
 
 void startGame(Player p1, Player p2) {
@@ -654,7 +653,7 @@ void roundOrdi(Ordi ord, Player p1) {
     // on déclare quelques variables...
     int val_x, val_y;
     int valShoot, found = 0, chx, i;
-    Case *tabCases; OrientationShoot tmp;
+    OrientationShoot tmp;
 
     // si l'IA est en état de recherche d'un bateau.
     if(ord->state == RESEARCH) {
@@ -794,8 +793,7 @@ void roundOrdi(Ordi ord, Player p1) {
         }
     }
 
-    tabCases = standardShoot(p1->grid, val_x, val_y);
-    valShoot = shoot(tabCases);
+    valShoot = shoot(p1->grid, val_x, val_y, &standardShoot);
 
     if(valShoot == 1) {
         ord->history[val_x][val_y] = 1;
@@ -840,7 +838,6 @@ void roundOrdi(Ordi ord, Player p1) {
     }
 
     printf("> %s a effectué un tir en %c%d.\n", ord->ordi->name, 'A' + val_y, val_x+1);
-    free(tabCases);
 }
 
 void playGame(Player p1, Ordi ord) {
@@ -874,6 +871,7 @@ void playGame(Player p1, Ordi ord) {
                 end = 1;
             }
         }
+
     }
 }
 
