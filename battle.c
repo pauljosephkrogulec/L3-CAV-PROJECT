@@ -423,11 +423,14 @@ void initGame(Player *p1, Ordi *ord) {
     puts("Les bateaux ne doivent pas être collés entre eux.\n");
 
     char *name = malloc(sizeof(char) * 25);
-    int sizeGrid = 0;
+    int sizeGrid = 0, c;
 
     while(sizeGrid < 8 || sizeGrid > 15) {
         printf("Indiquez la taille de la grille des joueurs (comprise entre 8 et 15) :\n> ");
         scanf("%d", &sizeGrid);
+
+        // On vide le buffer.
+        while ((c = getchar()) != '\n' && c != EOF);
     }
     printf("Indiquez le nom du joueur n°1 :\n> ");
     scanf("%s", name);
@@ -441,20 +444,23 @@ int *askCords() {
     /** Fonction qui ne prend aucun paramètre, et va demander des coordonnées tant qu'ils ne sont pas valide.
     Si les coordonnées sont valides, on les retournes dans un tableau [x, y]. */
 
-    int *tabCords = malloc(sizeof(int) * 2);
-    int cords_valid = 0, cord_x, cord_y, user_shoot; char cords[3];
+    int *tabCords = malloc(sizeof(int) * 2);char *cords;
+    int cords_valid = 0, cord_x, cord_y, user_shoot, c;
 
     while(!cords_valid) {
+        printf("> ");
         scanf("%s", cords);
 
         cord_x = atoi(cords+1);
-        if(cords[0] >= 'A' && cords[0] <= 'J' && cord_x >= 1 && cord_x <= 10) {
+        if(strlen(cords) < 4 && isalpha(cords[0]) && cord_x >= 1 && cord_x <= 10) {      
             tabCords[0] = cord_x - 1;
             tabCords[1] = cords[0] - 'A';
             cords_valid = 1;
         } else {
             printf("'%s' n'est pas une case valide.\n", cords);
         }
+
+        while ((c = getchar()) != '\n' && c != EOF);
     }
 
     return tabCords;
@@ -473,38 +479,42 @@ void placeShips(Player p, typeShip *tabShip, int nbShips) {
         printf("Indiquez les coordonnées pour placer votre ");
         switch (tabShip[ships_placed]) {
             case CARRIER:
-                printf("porte-avion de 5 cases :\n> ");
+                puts("porte-avion de 5 cases :");
                 lenShip = 5;
                 break;
         
             case CRUISER:
-                printf("croiseur de 4 cases :\n> ");
+                puts("croiseur de 4 cases :");
                 lenShip = 4;
                 break;
         
             case DESTROYER:
-                printf("destroyer de 3 cases :\n> ");
+                puts("destroyer de 3 cases :");
                 lenShip = 3;
                 break;
             case SUBMARINE:
-                printf("sous-marin de 3 cases :\n> ");
+                puts("sous-marin de 3 cases :");
                 lenShip = 3;
                 break;
             case TORPEDO:
-                printf("torpilleur de 2 cases :\n> ");
+                puts("torpilleur de 2 cases :");
                 lenShip = 2;
                 break;
         }
         cords = askCords();
+        int c;
 
-        do {
+        while(ch_orientation < 1 || ch_orientation > 2); {
             puts("Orientation possibles :");
             puts("1 > HORIZONTALE");
             puts("2 > VERTICALE\n");
 
             printf("Indiquez l'orientation du bateau :\n> ");
             scanf("%d", &ch_orientation);
-        } while(ch_orientation < 1 || ch_orientation > 2);
+
+            // on vide le buffer.
+            while ((c = getchar()) != '\n' && c != EOF); 
+        }
 
         if(ch_orientation == 1) o = HORIZONTAL;
         else o = VERTICAL;
@@ -524,7 +534,7 @@ void manageShoot(Player p, Player op, int *tabCords) {
     La fonction va demander au joueur le tir de son choix, et va effectuer ce tir si les conditions sont bien respectés. 
     (si le tir spécial n'a pas déjà été utilisé et que le bateau associé n'est pas détruit) */
 
-    int user_shoot = 0, shoot_valid = 0, shoot_line_valid = 0;
+    int user_shoot = 0, shoot_valid = 0, shoot_line_valid = 0, c;
     char line_shoot[1];
 
     while (!shoot_valid) {
@@ -538,6 +548,9 @@ void manageShoot(Player p, Player op, int *tabCords) {
             
             printf("Quel type de tir voulez-vous utiliser ? (exemple : 1)\n> ");
             scanf("%d", &user_shoot);
+
+            // on vide le buffer.
+            while ((c = getchar()) != '\n' && c != EOF);
         }
 
         if(user_shoot == 1) {
@@ -557,10 +570,11 @@ void manageShoot(Player p, Player op, int *tabCords) {
 
                     if(line_shoot[0] == 'C') {
                         shoot(op->grid, tabCords[0], tabCords[1], &lineShootV);
+                        shoot_line_valid = 1;
                     } else if(line_shoot[0] == 'L') {
                         shoot(op->grid, tabCords[0], tabCords[1], &lineShootH);
+                        shoot_line_valid = 1;
                     }
-                    shoot_line_valid = 1;
                 }
                 shoot_valid = 1;
                 p->shoot[0] = 0;
@@ -605,17 +619,21 @@ void manageShoot(Player p, Player op, int *tabCords) {
 }
 
 void startGame(Player p1, Player p2) {
-    /** Fonction qui prend en paramètre un joueur p1, et lance le jeu. */
+    /** Prend en paramètre un joueur p1.
+    La fonction va demander comment placer les bateaux du joueur et effectuer ce placement. */
     
     // On déclare quelques variables...
     typeShip tabShip[5] = {CARRIER, CRUISER, DESTROYER, SUBMARINE, TORPEDO};
-    int ch = 0;
+    int ch = 0, c;
 
     // On demande comment le joueur souhaite placer ses navires.
     while(ch < 1 || ch > 2) {
         puts("\nComment voulez-vous placer vos bateaux ?");
         printf("1 > Manuellement\n2 > Aléatoirement\n> ");
         scanf("%d", &ch);
+
+        // on vide le buffer.
+        while ((c = getchar()) != '\n' && c != EOF);
     }
     // une fois le choix valide.
     // Si c'est 1, il les ajoute manuellement.
@@ -634,13 +652,12 @@ void roundPlayer(Player p1, Player p2) {
     /** Fonction qui prend en paramètre deux joueurs et effectue le tour du joueur p1 contre le joueur p2,
     On demande les coordonnées à tirer, et le choix du tir. */
 
-    
+    // Un simple print pour indiqué au joueur de jouer.
     printf("C'est au tour de %s !\n", p1->name);
-
-    int *tabCords;
     
-    printf("\nA quelle case voulez-vous tirer ? (exemple : B2)\n> ");
-    tabCords = askCords();
+    // On demande la coordonées de tir.
+    puts("\nA quelle case voulez-vous tirer ? (exemple : B2)");
+    int *tabCords = askCords();
         
     // on demande puis effectue le tir aux coordonnées indiquées.
     manageShoot(p1, p2, tabCords);
@@ -793,6 +810,10 @@ void roundOrdi(Ordi ord, Player p1) {
         }
     }
 
+
+    int randShoot = rand() % 10;
+
+    
     valShoot = shoot(p1->grid, val_x, val_y, &standardShoot);
 
     if(valShoot == 1) {
@@ -861,13 +882,13 @@ void playGame(Player p1, Ordi ord) {
         // on vérifie si les bateaux adverses ne sont pas tous détruit.
         if(shipsDestroyed(ia->ordi)) {
             // Si c'est le cas, le jeu s'arrête, sinon on continue.
-            puts("Partie terminé ! Vous avez détruit l'ensemble des navires ennemis.");
+            puts("\nPartie terminé ! Vous avez détruit l'ensemble des navires ennemis.");
             end = 1;
         } else {
             // Sinon, on effectue le round du joueur 2 (soit l'IA).
             roundOrdi(ia, p);
             if(shipsDestroyed(p1)) {
-                puts("Partie terminé ! L'ORDI à détruit l'ensemble de vos navires.");
+                puts("\nPartie terminé ! L'ORDI à détruit l'ensemble de vos navires.");
                 end = 1;
             }
         }
