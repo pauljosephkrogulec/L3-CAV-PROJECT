@@ -1,5 +1,9 @@
-#ifndef DEF_BATTLE
-#define DEF_BATTLE
+// Macros stantards.
+#define isalnum(a) (isalpha(a) || isdigit(a))
+#define isalpha(a) (isupper(a) || islower(a))
+#define islower(a) (((a) >= 'a') && ((a) <= 'z'))
+#define isupper(a) (((a) >= 'A') && ((a) <= 'Z'))
+#define isdigit(a) (((a) >= '0') && ((a) <= '9'))
 
 /** ----- Enumérations ----- */
 typedef enum {
@@ -127,12 +131,12 @@ int shipsDestroyed(Player);
 
 // Fonctions de tirs.
 Case *standardShoot(Grid, int, int);
-Case *lineShootH(Grid, int);
-Case *lineShootV(Grid, int);
+Case *lineShootH(Grid, int, int);
+Case *lineShootV(Grid, int, int);
 Case *crossShoot(Grid, int, int);
 Case *plusShoot(Grid, int, int);
 Case *squareShoot(Grid, int, int);
-int shoot(Case*);
+int shoot(Grid, int, int, Case* (*)(Grid, int, int));
 
 // Fonctions pour la partie.
 void initGame(Player *, Ordi *);
@@ -149,5 +153,5 @@ void playGame(Player, Ordi);
 void cleanPlayer(Player);
 void cleanIA(Ordi o);
 
+// Fonction principale qui exécute le programme.
 void battleShip(void);
-#endif
