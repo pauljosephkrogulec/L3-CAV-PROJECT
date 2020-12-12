@@ -860,7 +860,7 @@ void roundOrdi(Ordi ord, Player p1) {
             // si on l'orientation est vers le haut.
             if(ord->shootOriented == TOP) {
                 //si la case suivante n'a pas encore été touche, on la prends
-                if(ord->history[val_x-1][val_y] = -1 && val_x - 1 >= 0) {
+                if(ord->history[val_x-1][val_y] == -1 && val_x - 1 >= 0) {
                     val_x = val_x-1;
                     found = 1;
                 // si la case suivante à déjà été tirée et que c'est un bateau,
@@ -874,7 +874,7 @@ void roundOrdi(Ordi ord, Player p1) {
             // si on l'orientation est vers le bas.
             } else if(ord->shootOriented == BOTTOM) {
                 //si la case suivante n'a pas encore été touche, on la prends
-                if(ord->history[val_x+1][val_y] = -1 && val_x + 1 < ord->ordi->grid->length) {
+                if(ord->history[val_x+1][val_y] == -1 && val_x + 1 < ord->ordi->grid->length) {
                     val_x = val_x+1;
                     found = 1;
                 // si la case suivante à déjà été tirée et que c'est un bateau,
@@ -888,7 +888,7 @@ void roundOrdi(Ordi ord, Player p1) {
             // si on l'orientation est vers la gauche.
             } else if(ord->shootOriented == LEFT) {
                 //si la case suivante n'a pas encore été touche, on la prends
-                if(ord->history[val_x][val_y-1] = -1  && val_y - 1 >= 0) {
+                if(ord->history[val_x][val_y-1] == -1  && val_y - 1 >= 0) {
                     val_y = val_y-1;
                     found = 1;
                 // si la case suivante à déjà été tirée et que c'est un bateau,
@@ -903,7 +903,7 @@ void roundOrdi(Ordi ord, Player p1) {
             // si on l'orientation est vers la droite.
             } else if(ord->shootOriented == RIGHT) {
                 //si la case suivante n'a pas encore été touche, on la prends
-                if(ord->history[val_x][val_y+1] = -1 && val_y + 1 < ord->ordi->grid->length) {
+                if(ord->history[val_x][val_y+1] == -1 && val_y + 1 < ord->ordi->grid->length) {
                     val_y = val_y+1;
                     found = 1;
                 // si la case suivante à déjà été tirée et que c'est un bateau,
