@@ -681,13 +681,13 @@ void roundOrdi(Ordi ord, Player p1) {
             if(ord->lastCase->y+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y+2] == -1) {
                 val_y += 2;
             // si il n'a pas déjà tirer à la case y+2 vers le haut.
-            } else if(ord->lastCase->y-2 >= ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y-2] == -1) {
+            } else if(ord->lastCase->y-2 >= 0 && ord->history[ord->lastCase->x][ord->lastCase->y-2] == -1) {
                 val_y -= 2;
             // si il n'a pas déjà tirer à la case x+2 vers la droite.
             } else if(ord->lastCase->x+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x+2][ord->lastCase->x] == -1) {
                 val_x += 2;
             // si il n'a pas déjà tirer à la case x-2 vers la gauche.
-            } else if(ord->lastCase->x-2 >= ord->ordi->grid->length && ord->history[ord->lastCase->x-2][ord->lastCase->x] == -1) {
+            } else if(ord->lastCase->x-2 >= 0 && ord->history[ord->lastCase->x-2][ord->lastCase->x] == -1) {
                 val_x -= 2;
             // Si on ne peut tirer aux positions voulues, on prend une case aléatoire.
             } else {
@@ -860,7 +860,7 @@ void roundOrdi(Ordi ord, Player p1) {
         // Si on est en état de destruction & que le bateau n'est pas encore détruit.
         } else if(ord->state == DESTRUCTION) {
 
-            // On va à la direction opposé pour continuer la destruction du bateau.
+            // On va à la direction opposé pour continuer la destruction du bateau.Z
             if(ord->shootOriented == TOP) ord->shootOriented = BOTTOM;
             else if(ord->shootOriented == BOTTOM) ord->shootOriented = TOP;
             else if(ord->shootOriented == LEFT) ord->shootOriented = RIGHT;
