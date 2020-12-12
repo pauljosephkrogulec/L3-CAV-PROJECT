@@ -215,30 +215,39 @@ void printGrid(Player p1, Player p2) {
 
     Case c;
 
+    // on affiche les entêtes des grilles.
     for(int i = 0; i < ((p1->grid->length * 4) + 2);i++) {
         if(i == 0) printf("\nGrille de %s", p1->name);
         printf(" ");
         if(i == (p1->grid->length * 4) + 1) printf("Grille de l'%s\n",p2->name);
     }
 
+    // on affiche la délimitation du haut des grilles.
     for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
         printf("-");
         if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
     } printf("-\n|    |");
+
+    // on affiche chaque lettre sur la ligne.
     for(int i = 0; i < p1->grid->length * 2; i++) {
         if(i == p1->grid->length) printf("\t\t|    |");
         printf(" %c |", 'A' + (i % p1->grid->length));
     } printf("\n");
-
+    
+    // on affiche la délimitation en dessous des lettres.
     for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
         printf("-");
         if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
     } printf("-\n");
 
+    // pour chaque grille en largeur.
     for(int i = 0; i < p1->grid->length; i++) {
-        
+
+        // on affiche le numéro.
         if((i+1) > 9) printf("| %d | ", i+1);
         else printf("| %d  | ", i+1);
+
+        // pour toutes la ligne, on affiche la case et son statut.
         for(int j = 0; j < p1->grid->length * 2;j++) {
 
             if(j < p1->grid->length) {
@@ -246,20 +255,27 @@ void printGrid(Player p1, Player p2) {
             } else {
                 c = p2->grid->cases[i][j%p1->grid->length];
             }
-
+            // si il est touché.
             if(c->state == TOUCHED) {
+                // # si c'est un bateau.
                 if(c->type == SHIP) {
                     printf("#");
+                // X si c'est de l'eau.
                 } else {
                     printf("X");
                 }
+            // si il n'est pas encore touché.
             } else {
+                // et qu'il s'agit de la grille du joueur
                 if(c->type == SHIP && j < p1->grid->length) {
+                    // on affiche O
                     printf("O");
                 } else {
+                    // sinon rien.
                     printf(" ");
                 }
             }
+            // si on arrive à la grille suivante, on affiche leurs numéro de ligne.
             if(j == p1->grid->length - 1) {
                 printf(" |\t\t");
                 if((i+1) > 9) printf("| %d", i+1);
@@ -269,27 +285,35 @@ void printGrid(Player p1, Player p2) {
 
         }
         printf("\n");
+        // on va remettre un tiré pour séparer de la ligne suivante.
         for(int i = 0; i < ((p1->grid->length * 4) + 5) * 2;i++) {
             printf("-");
             if(i == ((p1->grid->length * 4) + 5) - 1) printf("-\t\t");
         } printf("-\n");
     }
 }
+
 int isDestroyed(Ship s) {
     /** Fonction qui prend en paramètre un bateau, 
     et va regarder si ce bateau est détruit. Si toutes ces cases ont été touchées, on actualise son statut,
     sinon on retourne faux. */
 
-    if(s->state == DESTROYED){
+    // si le bateau est déjà détruit, on retourne 1.
+    if(s->state == DESTROYED) {
         return 1;
+    // sinon.
     } else {
         int i = 0;
+        // pour chaque case composant le navire, si il est touché, on incrémente.
         while(i < s->length && s->tabCase[i]->state == TOUCHED) i++;
+        // si toutes les cases sont touché,
         if(i == s->length){
+            // on l'actualise comme détruit, et on retourne 2.
             s->state = DESTROYED;
             return 2;
         }
     }
+    // on retourne 0 si le navire n'a rien.
     return 0;
 }
 
@@ -297,7 +321,7 @@ int isAlive(Player p, typeShip t) {
     /** Fonction qui prend en paramètre un joueur et un type de bateau.
     On va regarder dans sa liste de bateau, celui avec le type "t" est en vie. 1 si il l'est, 0 sinon. */
     
-    for(int i = 0;i < p->nbShip;i++){
+    for(int i = 0;i < p->nbShip;i++) {
         if(p->tab_ship[i]->type == t && !isDestroyed(p->tab_ship[i])) return 1;
     }
     return 0;
@@ -308,17 +332,23 @@ int shipsDestroyed(Player p) {
     et va regarder si tous ses bateaux sont détruits. Si c'est le cas, on retourne 1 si c'est vrai, 0 sinon. */
 
     int nbShipsAlive = 0, stat;
-
+    // on vérifie pour chaque navires.
     for(int i = 0; i < p->nbShip; i++) {
+        // on regarde si il est détruit ou non.
         stat = isDestroyed(p->tab_ship[i]);
+        // si c'est le cas on affiche un message.
         if (stat == 2) {
             printf("Un bateau de %s vient d'être détruit !\n", p->name);
+        // sinon le bateau est encore en vie.
         } else if(stat == 0) {
             nbShipsAlive++;
         }
     }
+    // on actualise le nombre de bateaux vivant du joueur.
     p->nbShip_alive = nbShipsAlive;
+    // si il est null, ils sont tous détruits, on retourne 1.
     if(!nbShipsAlive) return 1;
+    // sinon 0.
     return 0;
 }
 
@@ -418,14 +448,15 @@ Case *squareShoot(Grid g, int x, int y) {
 }
 
 int shoot(Grid g, int x, int y, Case * (*pShoot) (Grid, int, int)) {
-    /** Fonction qui prend en paramètre un tableau de case ciblées,
-     et va tirer dans chacunes des cases du tableau. Si on a tiré dans un bateau on retourne 1, sinon 0. */
+    /** Prend en paramètre une grille, des coordonées x, y, et un pointeur de fonction de tir.
+    La fonction a tirer dans chacunes des cases du tableau. Si on a tiré dans un bateau on retourne 1, sinon 0. */
 
     int sCase = 0;
+
+    // on récupére le tableau de case correspondant à la fonction de tir.
     Case *caseCible = (*pShoot) (g, x, y);
 
     for(int i = 0; caseCible[i];i++) {
-
         if(caseCible[i]->type == SHIP) sCase = 1;
         caseCible[i]->state = TOUCHED;
     }
