@@ -136,7 +136,8 @@ Case *lineShootV(Grid, int, int);
 Case *crossShoot(Grid, int, int);
 Case *plusShoot(Grid, int, int);
 Case *squareShoot(Grid, int, int);
-int shoot(Grid, int, int, Case* (*)(Grid, int, int));
+void shootPlayer(Grid, int, int, Case* (*)(Grid, int, int));
+int shootOrdi(Ordi, Player, int, int, OrientationShoot, Case* (*)(Grid, int, int));
 
 // Fonctions pour la partie.
 void initGame(Player *, Ordi *);
