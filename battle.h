@@ -117,7 +117,7 @@ typedef struct _Ordi {
 // Fonctions d'initialisations.
 Grid initGrid(int);
 Player initPlayer(char *, int);
-Ordi initOrdi(char *, int);
+Ordi initOrdi(int);
 Ship initShip(int, OrientationShip, typeShip);
 
 // Fonctions utilitaires.
