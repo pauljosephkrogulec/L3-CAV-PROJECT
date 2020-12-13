@@ -1078,7 +1078,7 @@ void battleShip() {
     // on lance la partie
     playGame(p1, ord);
     // on affiche la grille finale.
-    printGrid(p, ord->ordi);
+    printGrid(p1, ord->ordi);
 
     // on vide la mémoire.
     free(p1->name);
