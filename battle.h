@@ -117,7 +117,7 @@ typedef struct _Ordi {
 // Fonctions d'initialisations.
 Grid initGrid(int);
 Player initPlayer(char *, int);
-Ordi initOrdi(int);
+Ordi initOrdi(char *, int);
 Ship initShip(int, OrientationShip, typeShip);
 
 // Fonctions utilitaires.
@@ -137,7 +137,7 @@ Case *crossShoot(Grid, int, int);
 Case *plusShoot(Grid, int, int);
 Case *squareShoot(Grid, int, int);
 void shootPlayer(Grid, int, int, Case* (*)(Grid, int, int));
-void shootOrdi(Ordi, Grid, int, int, Case* (*)(Grid, int, int));
+Case shootOrdi(Ordi, Grid, int, int, Case* (*)(Grid, int, int));
 
 // Fonctions pour la partie.
 void initGame(Player *, Ordi *);
