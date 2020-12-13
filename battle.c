@@ -9,12 +9,12 @@ Grid initGrid(int lenGrid) {
     /** Fonction qui ne prend pas de paramètre et crée une matrice de Case,
     qui sera un plateau de jeu. Chaque case est par défaut une case d'eau qui n'a pas été touché. */
 
-    Grid g = malloc(sizeof(Grid));
-    g->cases = malloc(sizeof(Case *) * lenGrid);
+    Grid g = (Grid) malloc(sizeof(Grid));
+    g->cases = (Case **) malloc(sizeof(Case *) * lenGrid);
     for(int i = 0; i < lenGrid; i++) {
-        g->cases[i] = malloc(sizeof(Case) * lenGrid);
+        g->cases[i] = (Case *) malloc(sizeof(Case) * lenGrid);
         for(int j = 0; j < lenGrid;j++) {
-            g->cases[i][j] = malloc(sizeof(Case));
+            g->cases[i][j] = (Case) malloc(sizeof(Case));
             g->cases[i][j]->x = i;
             g->cases[i][j]->y = j;
             g->cases[i][j]->type = WATER;
@@ -29,14 +29,15 @@ Player initPlayer(char *name, int lenGrid) {
     /** Prend en paramètre le nom d'un joueur et son nombre de bateau.
     La fonction va initialiser un joueur et lui crée son plateau de jeu et son tableau de bateau à null. */
 
-    Player p = malloc(sizeof(Player));
+    Player p = (Player) malloc(sizeof(Player));
     p->name = name;
-    p->nbShip = p->nbShip_alive = 5;
-    p->tab_ship = malloc(sizeof(Ship) * p->nbShip);
-    p->grid = initGrid(lenGrid);
+    p->nbShip = 5;
+    p->nbShip_alive = 5;
+    p->tab_ship = (Ship *) malloc(sizeof(Ship) * p->nbShip);
+    p->grid = (Grid) initGrid(lenGrid);
 
     // On initialise le nombre de tirs spéciaux à 1 chacun.
-    p->shoot = malloc(sizeof(int)*4);
+    p->shoot = (int *) malloc(sizeof(int) * 4);
     for (int i = 0;i <4;i++) p->shoot[i] = 1;
     return p;
 }
@@ -216,10 +217,10 @@ void printGrid(Player p1, Player p2) {
     Case c;
 
     // on affiche les entêtes des grilles.
-    for(int i = 0; i < ((p1->grid->length * 4) + 2);i++) {
+    for(int i = 0; i < ((p1->grid->length * 4) + 3);i++) {
         if(i == 0) printf("\nGrille de %s", p1->name);
         printf(" ");
-        if(i == (p1->grid->length * 4) + 1) printf("Grille de l'%s\n",p2->name);
+        if(i == (p1->grid->length * 4) + 2) printf("Grille de l'%s\n",p2->name);
     }
 
     // on affiche la délimitation du haut des grilles.
@@ -259,10 +260,10 @@ void printGrid(Player p1, Player p2) {
             if(c->state == TOUCHED) {
                 // # si c'est un bateau.
                 if(c->type == SHIP) {
-                    printf("#");
+                    printf("\033[1;34m#\033[00m");
                 // X si c'est de l'eau.
                 } else {
-                    printf("X");
+                    printf("\033[1;31mX\033[00m");
                 }
             // si il n'est pas encore touché.
             } else {
@@ -865,13 +866,13 @@ void roundOrdi(Ordi ord, Player p1) {
             // si on l'orientation est vers le haut.
             if(ord->shootOriented == TOP) {
                 //si la case suivante n'a pas encore été touche, on la prends
-                if(ord->history[val_x-1][val_y] == -1 && val_x - 1 >= 0) {
-                    val_x = val_x-1;
+                if(val_x - 1 >= 0 && ord->history[val_x-1][val_y] == -1) {
+                    val_x -=1;
                     found = 1;
                 // si la case suivante à déjà été tirée et que c'est un bateau,
                 // on la garde en mémoire
-                } else if(ord->history[val_x-1][val_y] == 1 && val_x - 1 >= 0) {
-                    val_x = val_x-1;
+                } else if(val_x - 1 >= 0 && ord->history[val_x-1][val_y] == 1) {
+                    val_x -= 1;
                 // si c'est de l'eau, on va dans l'autre sens.
                 } else {
                     ord->shootOriented = BOTTOM;
@@ -879,13 +880,13 @@ void roundOrdi(Ordi ord, Player p1) {
             // si on l'orientation est vers le bas.
             } else if(ord->shootOriented == BOTTOM) {
                 //si la case suivante n'a pas encore été touche, on la prends
-                if(ord->history[val_x+1][val_y] == -1 && val_x + 1 < ord->ordi->grid->length) {
-                    val_x = val_x+1;
+                if(val_x + 1 < ord->ordi->grid->length && ord->history[val_x+1][val_y] == -1) {
+                    val_x += 1;
                     found = 1;
                 // si la case suivante à déjà été tirée et que c'est un bateau,
                 // on la garde en mémoire
-                } else if(ord->history[val_x+1][val_y] == 1 && val_x + 1 < ord->ordi->grid->length) {
-                    val_x = val_x+1;
+                } else if(val_x + 1 < ord->ordi->grid->length && ord->history[val_x+1][val_y] == 1) {
+                    val_x += 1;
                 } else {
                     // si c'est de l'eau, on va dans l'autre sens.
                     ord->shootOriented = TOP;
@@ -893,13 +894,13 @@ void roundOrdi(Ordi ord, Player p1) {
             // si on l'orientation est vers la gauche.
             } else if(ord->shootOriented == LEFT) {
                 //si la case suivante n'a pas encore été touche, on la prends
-                if(ord->history[val_x][val_y-1] == -1  && val_y - 1 >= 0) {
-                    val_y = val_y-1;
+                if(val_y - 1 >= 0 && ord->history[val_x][val_y-1] == -1) {
+                    val_y -= 1;
                     found = 1;
                 // si la case suivante à déjà été tirée et que c'est un bateau,
                 // on la garde en mémoire
-                } else if(ord->history[val_x][val_y-1] == 1  && val_y - 1 >= 0) {
-                    val_y = val_y-1;
+                } else if(val_y - 1 >= 0 && ord->history[val_x][val_y-1] == 1) {
+                    val_y -= 1;
                 } else {
                     // si c'est de l'eau, on va dans l'autre sens.
                     ord->shootOriented = RIGHT;
@@ -908,13 +909,13 @@ void roundOrdi(Ordi ord, Player p1) {
             // si on l'orientation est vers la droite.
             } else if(ord->shootOriented == RIGHT) {
                 //si la case suivante n'a pas encore été touche, on la prends
-                if(ord->history[val_x][val_y+1] == -1 && val_y + 1 < ord->ordi->grid->length) {
-                    val_y = val_y+1;
+                if(val_y + 1 < ord->ordi->grid->length && ord->history[val_x][val_y+1] == -1) {
+                    val_y += 1;
                     found = 1;
                 // si la case suivante à déjà été tirée et que c'est un bateau,
                 // on la garde en mémoire
-                } else if(ord->history[val_x][val_y+1] == 1 && val_y + 1 < ord->ordi->grid->length) {
-                    val_y = val_y+1;
+                } else if(val_y + 1 < ord->ordi->grid->length && ord->history[val_x][val_y+1] == 1) {
+                    val_y += 1;
                 } else {
                     // si c'est de l'eau, on va dans l'autre sens.
                     ord->shootOriented = LEFT;
@@ -922,12 +923,8 @@ void roundOrdi(Ordi ord, Player p1) {
             }
         }
     }
-
-    Case c;
-    int randShoot = rand() % 10, shipDiscover = 0;
-
-    c = shootOrdi(ord, p1->grid, val_x, val_y, &standardShoot);
-
+    // on effectue le tir.
+    Case c = shootOrdi(ord, p1->grid, val_x, val_y, &standardShoot);
 
     // Si on tire sur un bateau..
     if(ord->history[c->x][c->y] == 1) {
@@ -1077,7 +1074,11 @@ void battleShip() {
 
     // on demande des précisions au joueur avant de démarrer la partie.
     startGame(p1, ord->ordi);
+
+    // on lance la partie
     playGame(p1, ord);
+    // on affiche la grille finale.
+    printGrid(p, ord->ordi);
 
     // on vide la mémoire.
     free(p1->name);
