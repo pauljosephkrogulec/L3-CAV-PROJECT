@@ -69,23 +69,23 @@ typedef struct _Case {
     int y;
     typeCase type;
     stateCase state;
-} *Case;
+} Case;
 
 typedef struct _Grid {
-    Case **cases;
+    Case ***cases;
     int length;
-} *Grid;
+} Grid;
 
 typedef struct _Ship {
     /** On définit la structure d'un bateau composé d'un tableau de case (contenant les cases qui compose ce bateau), 
     de sa longueur, et de son orientation (verticale, ou horizontale). */
 
-    Case *tabCase;
+    Case **tabCase;
     int length;
     OrientationShip oriented;
     stateShip state;
     typeShip type;
-} *Ship;
+} Ship;
 
 typedef struct _Player {
     /** On définit la structure d'un joueur composé de son nom, 
@@ -95,64 +95,63 @@ typedef struct _Player {
     char *name;
     int nbShip;
     int nbShip_alive;
-    Grid grid;
-    Ship *tab_ship;
+    Grid *grid;
+    Ship **tab_ship;
     // Le nombre de tirs spéciaux restants.
     int *shoot;
-} *Player;
+} Player;
 
 typedef struct _Ordi {
     /** On définit la structure d'une IA, qui est une extention d'un joueur,
     mais qui possède également l'orientation de ses tirs, ses cases à ciblées
     son état dans lequel il se trouve et l'historique de ses coups. */
 
-    Player ordi;
+    Player *ordi;
     OrientationShoot shootOriented;
     stateOrdi state;
-    Case lastCase;
+    Case *lastCase;
     int **history;
-} *Ordi;
+} Ordi;
 
 /** ----- Fonctions ----- */
 // Fonctions d'initialisations.
-Grid initGrid(int);
-Player initPlayer(char *, int);
-Ordi initOrdi(int);
-Ship initShip(int, OrientationShip, typeShip);
+Grid *initGrid(int);
+Player *initPlayer(char *, int);
+Ordi *initOrdi(int);
+Ship *initShip(int, OrientationShip, typeShip);
 
 // Fonctions utilitaires.
-int addShip(Grid, Ship, int, int);
-void fillGrid(Player, typeShip *, int);
-void printGrid(Player, Player);
+int addShip(Grid *, Ship *, int, int);
+void fillGrid(Player *, typeShip *, int);
+void printGrid(Player *, Player *);
 
-int isDestroyed(Ship);
-int isAlive(Player, typeShip);
-int shipsDestroyed(Player);
+int isDestroyed(Ship *);
+int isAlive(Player *, typeShip);
+int shipsDestroyed(Player *);
 
 // Fonctions de tirs.
-Case *standardShoot(Grid, int, int);
-Case *lineShootH(Grid, int, int);
-Case *lineShootV(Grid, int, int);
-Case *crossShoot(Grid, int, int);
-Case *plusShoot(Grid, int, int);
-Case *squareShoot(Grid, int, int);
-void shootPlayer(Grid, int, int, Case* (*)(Grid, int, int));
-Case shootOrdi(Ordi, Grid, int, int, Case* (*)(Grid, int, int));
+Case **standardShoot(Grid *, int, int);
+Case **lineShootH(Grid *, int, int);
+Case **lineShootV(Grid *, int, int);
+Case **crossShoot(Grid *, int, int);
+Case **plusShoot(Grid *, int, int);
+Case **squareShoot(Grid *, int, int);
+void shootPlayer(Grid *, int, int, Case** (*)(Grid *, int, int));
+void shootOrdi(Ordi *, Grid *, int, int, Case** (*)(Grid *, int, int));
 
 // Fonctions pour la partie.
-void initGame(Player *, Ordi *);
 int *askCords(int);
-void placeShips(Player, typeShip *, int);
-void manageShoot(Player, Player, int *);
-void startGame(Player, Player);
+void placeShips(Player *, typeShip *, int);
+void manageShoot(Player *, Player *, int *);
+void startGame(Player *, Player *);
 
-void roundPlayer(Player, Player);
-void roundOrdi(Ordi, Player);
-void playGame(Player, Ordi);
+void roundPlayer(Player *, Player *);
+void roundOrdi(Ordi *, Player *);
+void playGame(Player *, Ordi *);
 
 // Fonctions qui nettoye la mémoire utilisée.
-void cleanPlayer(Player);
-void cleanIA(Ordi o);
+void cleanPlayer(Player *);
+void cleanIA(Ordi *);
 
 // Fonction principale qui exécute le programme.
 void battleShip(void);
