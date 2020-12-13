@@ -13,7 +13,4 @@ main.o: main.c battle.h
 	$(CC) -o main.o -c main.c -Wall -O
 
 clean:
-	rm -rf *.o
-
-mrproper: clean
-	rm -rf $(EXEC)
+	rm -f *.o
