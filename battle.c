@@ -36,8 +36,8 @@ Player initPlayer(char *name, int lenGrid) {
     p->grid = initGrid(lenGrid);
 
     // On initialise le nombre de tirs spéciaux à 1 chacun.
-    p->shoot = malloc(sizeof(int) * 4);
-    for(int i = 0;i < 4;i++) p->shoot[i] = 1;
+    p->shoot = malloc(sizeof(int)*4);
+    for (int i = 0;i <4;i++) p->shoot[i] = 1;
     return p;
 }
 
@@ -1048,8 +1048,8 @@ void cleanPlayer(Player p1) {
         free(p1->tab_ship[i]->tabCase);
         free(p1->tab_ship[i]);
     }
-    free(p1->tab_ship);
-    free(p1->shoot);
+    free(p1->shoot); 
+    free(p1->tab_ship);  
     free(p1->grid);
     free(p1);
 }  
@@ -1062,8 +1062,6 @@ void cleanIA(Ordi o) {
         free(o->history[i]); 
     }
     free(o->history);
-    
-    free(o->ordi->name);
     cleanPlayer(o->ordi);
     free(o);
 } 
@@ -1078,9 +1076,10 @@ void battleShip() {
 
     // on demande des précisions au joueur avant de démarrer la partie.
     startGame(p1, ord->ordi);
+    playGame(p1, ord);
 
     // on vide la mémoire.
-    free(p1->grid);
+    free(p1->name);
     cleanPlayer(p1);
     cleanIA(ord);
 }
