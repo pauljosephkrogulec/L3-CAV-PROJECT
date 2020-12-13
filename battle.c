@@ -159,7 +159,7 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
     // quelques vairables pour la fonction...
     Grid g = p->grid;
     Ship s;
-    Ship * tab_tmp = malloc(sizeof(Ship)* nbShips);
+    Ship * tab_tmp = p->tab_ship;
     int i = 0, val_x, val_y, lenShip;
 
     // tant que l'on n'a pas ajoutés tous les bateaux..
@@ -457,6 +457,7 @@ void shootPlayer(Grid g, int x, int y, Case * (*pShoot) (Grid, int, int)) {
     for(int i = 0; caseCible[i];i++) {
         caseCible[i]->state = TOUCHED;
     }
+    free(caseCible);
 }
 
 Case shootOrdi(Ordi ord, Grid g, int x, int y, Case * (*pShoot) (Grid, int, int)) {
@@ -477,7 +478,7 @@ Case shootOrdi(Ordi ord, Grid g, int x, int y, Case * (*pShoot) (Grid, int, int)
             ord->history[caseCible[i]->x][caseCible[i]->y] = 0;
         }
     }
-
+    free(caseCible);
     return c;
 }
 
@@ -725,7 +726,6 @@ void manageShoot(Player p, Player op, int *tabCords) {
         }
     }
     // on libére ensuite le tableau de coordonnées.
-    free(tabCords);
 }
 
 void startGame(Player p1, Player p2) {
@@ -774,6 +774,7 @@ void roundPlayer(Player p1, Player p2) {
     
     // on affiche sur la sortie standart le tir du joueur.
     printf("Résumé de la partie :\n> %s a effectué un tir en %c%d.\n", p1->name, 'A' + tabCords[0], tabCords[0]+1);
+    free(tabCords);
 }
 
 void roundOrdi(Ordi ord, Player p1) {
