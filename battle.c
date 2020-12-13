@@ -5,16 +5,16 @@
 #include "battle.h"
 
 /** ----- Fonctions d'initialisation ----- */
-Grid initGrid(int lenGrid) {
+Grid *initGrid(int lenGrid) {
     /** Fonction qui ne prend pas de paramètre et crée une matrice de Case,
     qui sera un plateau de jeu. Chaque case est par défaut une case d'eau qui n'a pas été touché. */
 
-    Grid g = (Grid) malloc(sizeof(Grid));
-    g->cases = (Case **) malloc(sizeof(Case *) * lenGrid);
+    Grid *g = malloc(sizeof(Grid));
+    g->cases =  malloc(sizeof(Case *) * lenGrid);
     for(int i = 0; i < lenGrid; i++) {
-        g->cases[i] = (Case *) malloc(sizeof(Case) * lenGrid);
+        g->cases[i] = malloc(sizeof(Case) * lenGrid);
         for(int j = 0; j < lenGrid;j++) {
-            g->cases[i][j] = (Case) malloc(sizeof(Case));
+            g->cases[i][j] = malloc(sizeof(Case *));
             g->cases[i][j]->x = i;
             g->cases[i][j]->y = j;
             g->cases[i][j]->type = WATER;
@@ -25,16 +25,16 @@ Grid initGrid(int lenGrid) {
     return g;
 }
 
-Player initPlayer(char *name, int lenGrid) {
+Player *initPlayer(char *name, int lenGrid) {
     /** Prend en paramètre le nom d'un joueur et son nombre de bateau.
     La fonction va initialiser un joueur et lui crée son plateau de jeu et son tableau de bateau à null. */
 
-    Player p = (Player) malloc(sizeof(Player));
+    Player *p = malloc(sizeof(Player));
     p->name = name;
     p->nbShip = 5;
     p->nbShip_alive = 5;
-    p->tab_ship = (Ship *) malloc(sizeof(Ship) * p->nbShip);
-    p->grid = (Grid) initGrid(lenGrid);
+    p->tab_ship = malloc(sizeof(Ship) * p->nbShip);
+    p->grid = initGrid(lenGrid);
 
     // On initialise le nombre de tirs spéciaux à 1 chacun.
     p->shoot = (int *) malloc(sizeof(int) * 4);
@@ -42,12 +42,12 @@ Player initPlayer(char *name, int lenGrid) {
     return p;
 }
 
-Ordi initOrdi(int lenGrid) {
+Ordi *initOrdi(int lenGrid) {
     /** Fonction qui ne prend aucun paramètre et va, initialiser une IA.
     Une IA est un joueur qui contient en plus un état, un tableau de cases à ciblées,
     et une matrice contenant l'historique de ces cases déjà tirées. */
 
-    Ordi o = malloc(sizeof(Ordi));
+    Ordi *o = malloc(sizeof(Ordi));
     char *n = "IA";
     o->ordi = initPlayer(n, lenGrid);
     o->state = RESEARCH;
@@ -64,11 +64,11 @@ Ordi initOrdi(int lenGrid) {
     return o;
 }
 
-Ship initShip(int l, OrientationShip o, typeShip t) {
+Ship *initShip(int l, OrientationShip o, typeShip t) {
     /** Prend en paramètre la longueur et l'orientation d'un bateau.
     La fonction va initialiser un bateau ses valeurs par défaud et les valeurs en paramètre.. */
 
-    Ship s = malloc(sizeof(Ship));
+    Ship *s = malloc(sizeof(Ship));
     s->tabCase = NULL;
     s->length = l;
     s->oriented = o;
@@ -77,13 +77,13 @@ Ship initShip(int l, OrientationShip o, typeShip t) {
     return s;
 }
 
-int addShip(Grid g, Ship s, int x, int y) {
+int addShip(Grid *g, Ship *s, int x, int y) {
     /** Prend en paramètre une grille de jeu, un bateau et les positions (x, y) où le placer.
     La fonction va ajouter le bateau à la grille, si le bateau à bien été ajouté, on retourne 1, sinon 0. */    
 
     // quelques vairables pour la fonction...
     int val_x, val_y, n = 0, stop = 0, nbCase = 0;
-    Case *tab_tmp = malloc(sizeof(Case) * s->length), c;
+    Case **tab_tmp = malloc(sizeof(Case) * s->length), *c;
 
     // on déclare le tableau de cases du bateau.
     s->tabCase = malloc(sizeof(Case) * s->length);
@@ -153,14 +153,14 @@ int addShip(Grid g, Ship s, int x, int y) {
     return 1;
 }
 
-void fillGrid(Player p, typeShip *tabShip, int nbShips) {
+void fillGrid(Player *p, typeShip *tabShip, int nbShips) {
     /** Fonction qui prend en paramètre la grille de jeu d'un joueur, le tableau des types de bateaux à ajoutés 
     ainsi que leurs nombres, et va remplir aléatoirement sa grille de jeu de nbShips bateaux. */
     
     // quelques vairables pour la fonction...
-    Grid g = p->grid;
-    Ship s;
-    Ship * tab_tmp = p->tab_ship;
+    Grid *g = p->grid;
+    Ship *s;
+    Ship **tab_tmp = p->tab_ship;
     int i = 0, val_x, val_y, lenShip;
 
     // tant que l'on n'a pas ajoutés tous les bateaux..
@@ -210,11 +210,11 @@ void fillGrid(Player p, typeShip *tabShip, int nbShips) {
     p->tab_ship = tab_tmp;
 }
 
-void printGrid(Player p1, Player p2) {
+void printGrid(Player *p1, Player *p2) {
     /** Fonction qui prend en paramètre deux joueurs (p1, p2),
     et va afficher les grilles des deux joueurs l'une à côté de l'autre. */
 
-    Case c;
+    Case *c;
 
     // on affiche les entêtes des grilles.
     for(int i = 0; i < ((p1->grid->length * 4) + 3);i++) {
@@ -260,7 +260,7 @@ void printGrid(Player p1, Player p2) {
             if(c->state == TOUCHED) {
                 // # si c'est un bateau.
                 if(c->type == SHIP) {
-                    printf("\033[1;34m#\033[00m");
+                    printf("\033[1;32m#\033[00m");
                 // X si c'est de l'eau.
                 } else {
                     printf("\033[1;31mX\033[00m");
@@ -294,7 +294,7 @@ void printGrid(Player p1, Player p2) {
     }
 }
 
-int isDestroyed(Ship s) {
+int isDestroyed(Ship *s) {
     /** Fonction qui prend en paramètre un bateau, 
     et va regarder si ce bateau est détruit. Si toutes ces cases ont été touchées, on actualise son statut,
     sinon on retourne faux. */
@@ -318,7 +318,7 @@ int isDestroyed(Ship s) {
     return 0;
 }
 
-int isAlive(Player p, typeShip t) {
+int isAlive(Player *p, typeShip t) {
     /** Fonction qui prend en paramètre un joueur et un type de bateau.
     On va regarder dans sa liste de bateau, celui avec le type "t" est en vie. 1 si il l'est, 0 sinon. */
     
@@ -328,7 +328,7 @@ int isAlive(Player p, typeShip t) {
     return 0;
 }
 
-int shipsDestroyed(Player p) {
+int shipsDestroyed(Player *p) {
     /** Fonction qui prend en paramètre un joueur p,
     et va regarder si tous ses bateaux sont détruits. Si c'est le cas, on retourne 1 si c'est vrai, 0 sinon. */
 
@@ -354,20 +354,20 @@ int shipsDestroyed(Player p) {
 }
 
 /** ----- Fonctions de tirs ----- */
-Case *standardShoot(Grid g, int x, int y) {
+Case **standardShoot(Grid *g, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
     La fonction concerne un tir sur une seule case où l'on va déclarer et retourne le tableau contenant cette case. */
 
-    Case *caseCible = malloc(sizeof(Case));
+    Case **caseCible = malloc(sizeof(Case));
     caseCible[0] = g->cases[x][y];
     return caseCible;
 }
 
-Case *lineShootH(Grid g, int x, int y) {
+Case **lineShootH(Grid *g, int x, int y) {
     /** Prend en paramètre une grille de jeu, et un ligne x de cette grille.
     La fonction concerne un tir sur l'ensemble des cases de la ligne horizontale (x) donnée en paramètre. */
 
-    Case *caseCible = malloc(sizeof(Case) * g->length);
+    Case **caseCible = malloc(sizeof(Case) * g->length);
     int nbCase = 0;
     for(int i = 0; i < g->length;i++) {
         caseCible[nbCase++] = g->cases[x][i];
@@ -377,11 +377,11 @@ Case *lineShootH(Grid g, int x, int y) {
     return caseCible;
 }
 
-Case *lineShootV(Grid g, int x, int y) {
+Case **lineShootV(Grid *g, int x, int y) {
     /** Prend en paramètre une grille de jeu, et un ligne y de cette grille.
     La fonction concerne un tir sur l'ensemble des cases de la ligne verticale (y) donnée en paramètre. */
 
-    Case *caseCible = malloc(sizeof(Case) * g->length);
+    Case **caseCible = malloc(sizeof(Case) * g->length);
     int nbCase = 0;
     for(int i = 0; i < g->length;i++) {
         caseCible[nbCase++] = g->cases[i][y];
@@ -391,11 +391,11 @@ Case *lineShootV(Grid g, int x, int y) {
     return caseCible;
 }
 
-Case *crossShoot(Grid g, int x, int y) {
+Case **crossShoot(Grid *g, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
     La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
 
-    Case *caseCible = malloc(sizeof(Case) * 6);
+    Case **caseCible = malloc(sizeof(Case) * 6);
     caseCible[0] = g->cases[x][y];
     int nbCase = 1;
     for(int i = x-1; i < x + 2;i++) {
@@ -410,11 +410,11 @@ Case *crossShoot(Grid g, int x, int y) {
     return caseCible;
 }
 
-Case *plusShoot(Grid g, int x, int y) {
+Case **plusShoot(Grid *g, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
     La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
 
-    Case *caseCible = malloc(sizeof(Case) * 6);
+    Case **caseCible = malloc(sizeof(Case) * 6);
     caseCible[0] = g->cases[x][y];
     int nbCase = 1;
     for(int i = x-1; i < x + 2;i++) {
@@ -429,11 +429,11 @@ Case *plusShoot(Grid g, int x, int y) {
     return caseCible;
 }
 
-Case *squareShoot(Grid g, int x, int y) {
+Case **squareShoot(Grid *g, int x, int y) {
     /** Prend en paramètre une grille de jeu, et une position (x, y) d'une case.
     La fonction concerne un tir en carré de taille 3x3 centré sur une case (x, y) passée en paramètre. */
 
-    Case *caseCible = malloc(sizeof(Case) * 10);
+    Case **caseCible = malloc(sizeof(Case) * 10);
     int nbCase = 0;
     for(int i = x-1; i < x + 2; i++) {
         if(i >= 0 && i < g->length) {
@@ -448,12 +448,12 @@ Case *squareShoot(Grid g, int x, int y) {
     return caseCible;
 }
 
-void shootPlayer(Grid g, int x, int y, Case * (*pShoot) (Grid, int, int)) {
+void shootPlayer(Grid *g, int x, int y, Case ** (*pShoot) (Grid *, int, int)) {
     /** Prend en paramètre une grille, des coordonées x, y, et un pointeur de fonction de tir.
     La fonction a tirer dans chacunes des cases du tableau. Si on a tiré dans un bateau on retourne 1, sinon 0. */
 
     // on récupére le tableau de case correspondant à la fonction de tir.
-    Case *caseCible = (*pShoot) (g, x, y);
+    Case **caseCible = (*pShoot) (g, x, y);
 
     for(int i = 0; caseCible[i];i++) {
         caseCible[i]->state = TOUCHED;
@@ -461,57 +461,26 @@ void shootPlayer(Grid g, int x, int y, Case * (*pShoot) (Grid, int, int)) {
     free(caseCible);
 }
 
-Case shootOrdi(Ordi ord, Grid g, int x, int y, Case * (*pShoot) (Grid, int, int)) {
+void shootOrdi(Ordi *ord, Grid *g, int x, int y, Case ** (*pShoot) (Grid *, int, int)) {
     /** Prend en paramètre l'ordi, une grille, des coordonées x, y, et un pointeur de fonction de tir.
     La fonction a tirer dans chacunes des cases du tableau. Si on a tiré dans un bateau on retourne 1, sinon 0. */
 
     // on récupére le tableau de case correspondant à la fonction de tir.
-    Case *caseCible = (*pShoot) (g, x, y);
-    Case c = g->cases[x][y];
+    Case **caseCible = (*pShoot) (g, x, y);
     int shipCase = 0;
 
     for(int i = 0; caseCible[i];i++) {
         caseCible[i]->state = TOUCHED;
         if(caseCible[i]->type == SHIP) {
-            ord->history[caseCible[i]->x][caseCible[i]->y] = 1;
-            c = g->cases[caseCible[i]->x][caseCible[i]->y];
+            ord->history[x][y] = 1;
         } else {
-            ord->history[caseCible[i]->x][caseCible[i]->y] = 0;
+            ord->history[x][y] = 0;
         }
     }
     free(caseCible);
-    return c;
 }
 
 /** ----- Fonctions pour la partie ----- */
-void initGame(Player *p1, Ordi *ord) {
-    /** Fonction qui prend en paramètre deux joueurs, et les initialises.
-    On retourne également le nombre de joueurs présent dans la partie (hormis l'ORDI). */
-
-    srand(time(NULL));
-    puts("-------- BATAILLE NAVALE --------");
-    puts("Règles : La bataille navale oppose deux joueurs qui s'affrontent. Chacun a une flotte composée de 5 bateaux, qui sont, en général, les suivants :");
-    puts("1 porte-avion (5 cases), 1 croiseur (4 cases), 1 destroyer (3 cases), 1 sous-marin (3 cases), 1 torpilleur (2 cases)");
-    puts("Les bateaux ne doivent pas être collés entre eux.\n");
-
-    char *name = malloc(sizeof(char) * 25);
-    int sizeGrid = 0, c;
-
-    while(sizeGrid < 8 || sizeGrid > 15) {
-        printf("Indiquez la taille de la grille des joueurs (comprise entre 8 et 15) :\n> ");
-        scanf("%d", &sizeGrid);
-
-        // On vide le buffer.
-        while ((c = getchar()) != '\n' && c != EOF);
-    }
-    printf("Indiquez le nom du joueur n°1 :\n> ");
-    scanf("%s", name);
-    
-
-    *p1 = initPlayer(name, sizeGrid);
-    *ord = initOrdi(sizeGrid);
-}
-
 int *askCords(int lenMax) {
     /** Fonction qui ne prend aucun paramètre, et va demander des coordonnées tant qu'ils ne sont pas valide.
     Si les coordonnées sont valides, on les retournes dans un tableau [x, y]. */
@@ -546,13 +515,13 @@ int *askCords(int lenMax) {
     return tabCords;
 }
 
-void placeShips(Player p, typeShip *tabShip, int nbShips) {
+void placeShips(Player *p, typeShip *tabShip, int nbShips) {
     /** Prend en paramètre un joueur, un tableau de bateau à assigner, et leurs nombres.
     La fonction va demander au joueur les coordonnées des bateau à placer. */
 
     // on déclare quelques variables...
     int ships_placed = 0, *cords, ch_orientation = 0, lenShip, res = 0, c;
-    Ship s; OrientationShip o;
+    Ship *s; OrientationShip o;
 
     // tant que les bateaux ne sont pas tous placés.    
     while(ships_placed < nbShips) {
@@ -619,7 +588,7 @@ void placeShips(Player p, typeShip *tabShip, int nbShips) {
     }
 }
 
-void manageShoot(Player p, Player op, int *tabCords) {
+void manageShoot(Player *p, Player *op, int *tabCords) {
     /** Prend en paramètre le joueur, son adversaire et les coordonnées de la case ciblée. 
     La fonction va demander au joueur le tir de son choix, et va effectuer ce tir si les conditions sont bien respectés. 
     (si le tir spécial n'a pas déjà été utilisé et que le bateau associé n'est pas détruit) */
@@ -729,7 +698,7 @@ void manageShoot(Player p, Player op, int *tabCords) {
     // on libére ensuite le tableau de coordonnées.
 }
 
-void startGame(Player p1, Player p2) {
+void startGame(Player *p1, Player *p2) {
     /** Prend en paramètre un joueur p1.
     La fonction va demander comment placer les bateaux du joueur et effectuer ce placement. */
     
@@ -759,7 +728,7 @@ void startGame(Player p1, Player p2) {
     fillGrid(p2, tabShip, 5);
 }
 
-void roundPlayer(Player p1, Player p2) {
+void roundPlayer(Player *p1, Player *p2) {
     /** Fonction qui prend en paramètre deux joueurs et effectue le tour du joueur p1 contre le joueur p2,
     On demande les coordonnées à tirer, et le choix du tir. */
 
@@ -778,12 +747,12 @@ void roundPlayer(Player p1, Player p2) {
     free(tabCords);
 }
 
-void roundOrdi(Ordi ord, Player p1) {
+void roundOrdi(Ordi *ord, Player *p1) {
     /** Prend en paramètre un ordi de type IA et un joueur.
     La fonction va gérer le tour d'un ordi et effectuer un tir selon son état. */
     
     // on déclare quelques variables...
-    int val_x, val_y, valShoot, found = 0, chx, i,nbS_1, nbS_2, speciaux = 0;
+    int val_x, val_y, found = 0, nbS_1, nbS_2, cords_valide;
     OrientationShoot tmp;
 
     // si l'IA est en état de recherche d'un bateau.
@@ -793,26 +762,32 @@ void roundOrdi(Ordi ord, Player p1) {
             // on sauvegarde les coordonées de tir,
             val_x = ord->lastCase->x;
             val_y = ord->lastCase->y;
+            found = 0;
 
             // si il n'a pas déjà tirer à la case y+2 vers le bas.
             if(ord->lastCase->y+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x][ord->lastCase->y+2] == -1) {
                 val_y += 2;
+                found = 1;
             // si il n'a pas déjà tirer à la case y+2 vers le haut.
             } else if(ord->lastCase->y-2 >= 0 && ord->history[ord->lastCase->x][ord->lastCase->y-2] == -1) {
                 val_y -= 2;
+                found = 1;
             // si il n'a pas déjà tirer à la case x+2 vers la droite.
             } else if(ord->lastCase->x+2 < ord->ordi->grid->length && ord->history[ord->lastCase->x+2][ord->lastCase->x] == -1) {
                 val_x += 2;
+                found = 1;
             // si il n'a pas déjà tirer à la case x-2 vers la gauche.
             } else if(ord->lastCase->x-2 >= 0 && ord->history[ord->lastCase->x-2][ord->lastCase->x] == -1) {
                 val_x -= 2;
-            // Si on ne peut tirer aux positions voulues, on prend une case aléatoire.
-            } else {
-                val_x = rand() % ord->ordi->grid->length;
-                val_y = rand() % ord->ordi->grid->length;
+                found = 1;
             }
+
+            if(ord->history[val_x][val_y] != -1) found = 0;
+        }
         // sinon, on effectue le premier tir de manière aléatoire.
-        } else {
+        if(!found || ord->lastCase == NULL) {
+            cords_valide = 0;
+
             val_x = rand() % ord->ordi->grid->length;
             val_y = rand() % ord->ordi->grid->length;
         }
@@ -924,13 +899,13 @@ void roundOrdi(Ordi ord, Player p1) {
         }
     }
     // on effectue le tir.
-    Case c = shootOrdi(ord, p1->grid, val_x, val_y, &standardShoot);
+    shootOrdi(ord, p1->grid, val_x, val_y, &standardShoot);
 
     // Si on tire sur un bateau..
-    if(ord->history[c->x][c->y] == 1) {
+    if(ord->history[val_x][val_y] == 1) {
 
         // on sauevarde la case.
-        ord->lastCase = p1->grid->cases[c->x][c->y];
+        ord->lastCase = p1->grid->cases[val_x][val_y];
 
         // si on est en état de recherche
         if(ord->state == RESEARCH) {
@@ -976,35 +951,34 @@ void roundOrdi(Ordi ord, Player p1) {
         }
     // Si il tire dans l'eau..
     } else {
-        if(speciaux && ord->state == RESEARCH) {
-            ord->lastCase = NULL;
-        } else {
-            // Si on est en état de recherche, on sauvegarde la case tiré.
-            if(ord->state == RESEARCH) {
-                ord->lastCase = p1->grid->cases[c->x][c->y];
+        
+       
+        // Si on est en état de recherche, on sauvegarde la case tiré.
+        if(ord->state == RESEARCH) {
+            ord->lastCase = p1->grid->cases[val_x][val_y];
 
-            // Si on est en état de destruction & que le bateau n'est pas encore détruit.
-            } else if(ord->state == DESTRUCTION) {
+        // Si on est en état de destruction & que le bateau n'est pas encore détruit.
+        } else if(ord->state == DESTRUCTION) {
 
-                // On va à la direction opposé pour continuer la destruction du bateau.Z
-                if(ord->shootOriented == TOP) ord->shootOriented = BOTTOM;
-                else if(ord->shootOriented == BOTTOM) ord->shootOriented = TOP;
-                else if(ord->shootOriented == LEFT) ord->shootOriented = RIGHT;
-                else if(ord->shootOriented == RIGHT) ord->shootOriented = LEFT;
-            }
+            // On va à la direction opposé pour continuer la destruction du bateau.Z
+            if(ord->shootOriented == TOP) ord->shootOriented = BOTTOM;
+            else if(ord->shootOriented == BOTTOM) ord->shootOriented = TOP;
+            else if(ord->shootOriented == LEFT) ord->shootOriented = RIGHT;
+            else if(ord->shootOriented == RIGHT) ord->shootOriented = LEFT;
         }
+        
     }
     // on affiche sur la sortie standart le tir de l'ORDI.
     printf("> %s a effectué un tir en %c%d.\n", ord->ordi->name, 'A' + val_y, val_x+1);
 }
 
-void playGame(Player p1, Ordi ord) {
+void playGame(Player *p1, Ordi *ord) {
     /** Prend en paramètre deux joueurs p1 et p2.
     La fonction va s'occuper du déroulement de la partie entre les deux joueurs. */
 
     int end = 0;
-    Player p = p1;
-    Ordi ia = ord;
+    Player *p = p1;
+    Ordi *ia = ord;
 
     // Le jeu continue tant que les deux joueurs ont encore au moins un bateau en vie.
     while(!end) {
@@ -1018,12 +992,14 @@ void playGame(Player p1, Ordi ord) {
         // on vérifie si les bateaux adverses ne sont pas tous détruit.
         if(shipsDestroyed(ia->ordi)) {
             // Si c'est le cas, le jeu s'arrête, sinon on continue.
+            printGrid(p, ia->ordi);
             puts("\nPartie terminé ! Vous avez détruit l'ensemble des navires ennemis.");
             end = 1;
         } else {
             // Sinon, on effectue le round du joueur 2 (soit l'IA).
             roundOrdi(ia, p);
             if(shipsDestroyed(p1)) {
+                printGrid(p, ia->ordi);
                 puts("\nPartie terminé ! L'ORDI à détruit l'ensemble de vos navires.");
                 end = 1;
             }
@@ -1031,37 +1007,37 @@ void playGame(Player p1, Ordi ord) {
     }
 }
 
-void cleanPlayer(Player p1) {
+void cleanPlayer(Player *p) {
     /** Fonction qui prend en paramètre un joueur,
     et va libérer l'espace mémoire qui lui été réservé. */
 
-    for(int i = 0; i < p1->grid->length; i++) { 
-        for(int j = 0; j < p1->grid->length; j++) { 
-            free(p1->grid->cases[i][j]); 
+    for(int i = 0; i < p->grid->length; i++) { 
+        for(int j = 0; j < p->grid->length; j++) { 
+            free(p->grid->cases[i][j]); 
         } 
-        free(p1->grid->cases[i]); 
+        free(p->grid->cases[i]); 
     } 
-    free(p1->grid->cases); 
-    for(int i = 0; i < p1->nbShip;i++) {
-        free(p1->tab_ship[i]->tabCase);
-        free(p1->tab_ship[i]);
+    free(p->grid->cases); 
+    for(int i = 0; i < p->nbShip;i++) {
+        free(p->tab_ship[i]->tabCase);
+        free(p->tab_ship[i]);
     }
-    free(p1->shoot); 
-    free(p1->tab_ship);  
-    free(p1->grid);
-    free(p1);
+    free(p->shoot); 
+    free(p->tab_ship);  
+    free(p->grid);
+    free(p);
 }  
 
-void cleanIA(Ordi o) {
+void cleanIA(Ordi *ord) {
     /** Fonction qui prend en paramètre un ORDI,
     et va libérer l'espace mémoire qui lui été réservé. */
 
-    for(int i = 0; i < o->ordi->grid->length; i++) { 
-        free(o->history[i]); 
+    for(int i = 0; i < ord->ordi->grid->length; i++) { 
+        free(ord->history[i]); 
     }
-    free(o->history);
-    cleanPlayer(o->ordi);
-    free(o);
+    free(ord->history);
+    cleanPlayer(ord->ordi);
+    free(ord);
 } 
 
 void battleShip() {
@@ -1069,16 +1045,36 @@ void battleShip() {
     et va initialiser les joueurs, lancer la partie et à la fin libérer l'espace mémoire utilisé durant la partie. */
 
     // On déclare les deux joeuurs et on les initialises.
-    Player p1; Ordi ord;
-    initGame(&p1, &ord);
+    Player *p1; Ordi *ord;
+    char *name = malloc(sizeof(char) * 25);int sizeGrid = 0, c;
+    srand(time(NULL));
+
+    // message d'accueil
+    puts("-------- BATAILLE NAVALE --------");
+    puts("Règles : La bataille navale oppose deux joueurs qui s'affrontent. Chacun a une flotte composée de 5 bateaux, qui sont, en général, les suivants :");
+    puts("1 porte-avion (5 cases), 1 croiseur (4 cases), 1 destroyer (3 cases), 1 sous-marin (3 cases), 1 torpilleur (2 cases)");
+    puts("Les bateaux ne doivent pas être collés entre eux.\n");
+
+    // on demande la taille de la grille.
+    while(sizeGrid < 8 || sizeGrid > 15) {
+        printf("Indiquez la taille de la grille des joueurs (comprise entre 8 et 15) :\n> ");
+        scanf("%d", &sizeGrid);
+
+        // On vide le buffer.
+        while ((c = getchar()) != '\n' && c != EOF);
+    }
+
+    // on demande le nom du joueur.
+    printf("Indiquez le nom du joueur n°1 :\n> ");
+    scanf("%s", name);
+    
+    // on initialise le joueur et l'ordi.
+    p1 = initPlayer(name, sizeGrid);
+    ord = initOrdi(sizeGrid);
 
     // on demande des précisions au joueur avant de démarrer la partie.
     startGame(p1, ord->ordi);
-
-    // on lance la partie
     playGame(p1, ord);
-    // on affiche la grille finale.
-    printGrid(p1, ord->ordi);
 
     // on vide la mémoire.
     free(p1->name);
